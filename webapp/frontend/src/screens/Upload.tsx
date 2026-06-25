@@ -9,7 +9,7 @@ export function Upload({ onCreated }: { onCreated: (j: Job) => void }) {
   const [bitrate, setBitrate] = useState(320);
   const [bitdepth, setBitdepth] = useState(16);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -26,21 +26,25 @@ export function Upload({ onCreated }: { onCreated: (j: Job) => void }) {
   }, [stems.join(",")]);
 
   async function submit() {
-    if (!file) return;
+    if (files.length === 0) return;
     setBusy(true);
     try {
       const chosen = stems.filter((s) => selected[s]);
       const allChosen = chosen.length === stems.length;
-      onCreated(
-        await createJob(file, {
-          model,
-          output_format: format,
-          output_bitrate: format === "mp3" ? bitrate : undefined,
-          output_bitdepth: format === "wav" ? bitdepth : undefined,
-          stems: allChosen ? undefined : chosen,
-        }),
-      );
-      setFile(null);
+      const batch_id = files.length > 1 ? crypto.randomUUID() : undefined;
+      for (const f of files) {
+        onCreated(
+          await createJob(f, {
+            model,
+            output_format: format,
+            output_bitrate: format === "mp3" ? bitrate : undefined,
+            output_bitdepth: format === "wav" ? bitdepth : undefined,
+            stems: allChosen ? undefined : chosen,
+            batch_id,
+          }),
+        );
+      }
+      setFiles([]);
     } finally {
       setBusy(false);
     }
@@ -51,8 +55,9 @@ export function Upload({ onCreated }: { onCreated: (j: Job) => void }) {
       <input
         data-testid="file-input"
         type="file"
+        multiple
         accept=".mp3,.flac,.wav,.ogg,.m4a"
-        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+        onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
       />
       <select value={model} onChange={(e) => setModel(e.target.value)}>
         {models.map((m) => (
@@ -89,7 +94,9 @@ export function Upload({ onCreated }: { onCreated: (j: Job) => void }) {
           </label>
         ))}
       </fieldset>
-      <button onClick={submit} disabled={!file || busy}>Separate</button>
+      <button onClick={submit} disabled={files.length === 0 || busy}>
+        {files.length > 1 ? `Separate ${files.length} files` : "Separate"}
+      </button>
     </div>
   );
 }
