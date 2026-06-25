@@ -2,7 +2,7 @@ import React from "react";
 import type { Job } from "../types";
 import { stemUrl } from "../api/client";
 
-export function Dashboard({ jobs }: { jobs: Job[] }) {
+export function Dashboard({ jobs, onOpen }: { jobs: Job[]; onOpen?: (j: Job) => void }) {
   return (
     <div>
       {jobs.map((j) => (
@@ -27,6 +27,9 @@ export function Dashboard({ jobs }: { jobs: Job[] }) {
                 </a>
               ))}
             </div>
+          )}
+          {j.status === "done" && onOpen && (
+            <button onClick={() => onOpen(j)}>Open in studio</button>
           )}
           {j.status === "failed" && <div className="error">{j.error_message}</div>}
         </div>
