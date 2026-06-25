@@ -3,6 +3,7 @@ import { Upload } from "./screens/Upload";
 import { Dashboard } from "./screens/Dashboard";
 import { Studio } from "./screens/Studio";
 import { Library } from "./screens/Library";
+import { HealthBanner } from "./components/HealthBanner";
 import { useStore } from "./store";
 import { subscribeJob } from "./api/sse";
 import { getJob, listJobs, deleteJob } from "./api/client";
@@ -45,6 +46,7 @@ export function App() {
   return (
     <div className="app">
       <h1>Demucs Stem Studio</h1>
+      <HealthBanner />
       <nav>
         <button onClick={() => setView("home")}>Home</button>
         <button onClick={() => setView("library")}>Library</button>

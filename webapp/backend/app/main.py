@@ -15,6 +15,15 @@ def create_app() -> FastAPI:
     app.include_router(routes_stems.router)
     app.include_router(routes_mixdown.router)
     app.include_router(sse.router)
+
+    from pathlib import Path
+    from fastapi.staticfiles import StaticFiles
+    from app.config import get_settings
+
+    settings = get_settings()
+    dist = settings.frontend_dist or (Path(__file__).resolve().parents[2] / "frontend" / "dist")
+    if Path(dist).exists():
+        app.mount("/", StaticFiles(directory=str(dist), html=True), name="spa")
     return app
 
 

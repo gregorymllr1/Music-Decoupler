@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -20,6 +21,7 @@ class Settings(BaseSettings):
     model_cache_size: int = 2
     sse_poll_interval: float = 0.4
     worker_poll_interval: float = 0.5
+    frontend_dist: Optional[Path] = None
 
 
 @lru_cache
