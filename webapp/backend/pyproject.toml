@@ -9,6 +9,8 @@ dependencies = [
   "pydantic-settings>=2.2",
   "python-multipart>=0.0.9",
   "soundfile>=0.12",
+  "numpy>=1.21",
+  "lameenc>=1.4",
 ]
 
 [project.optional-dependencies]
