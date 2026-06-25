@@ -24,11 +24,12 @@ def _real_separate(cache):
     from app.worker import engine
 
     def fn(job, on_progress):
-        return engine.run_separation(
+        stems, sr, used = engine.run_separation_resilient(
             source_path=job.source_path, model=job.model,
             device=job.device_used or engine.detect_device(),
             on_progress=on_progress, cache=cache,
         )
+        return stems, sr
 
     return fn
 

@@ -50,3 +50,46 @@ def run_separation(*, source_path: str, model: str, device: str,
     separator.update_parameter(callback=_cb)
     _origin, separated = separator.separate_audio_file(source_path)
     return separated, separator.samplerate
+
+
+def _is_oom(err: Exception) -> bool:
+    return "out of memory" in str(err).lower()
+
+
+def _empty_cuda_cache() -> None:
+    try:
+        import torch
+
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    except Exception:
+        pass
+
+
+def run_separation_resilient(*, source_path, model, device, on_progress, cache,
+                             segments=(None, 12, 8)):
+    devices = [device, "cpu"] if device == "cuda" else ["cpu"]
+    last_err = None
+    for dev in devices:
+        seg_list = segments if dev == "cuda" else (None,)
+        for seg in seg_list:
+            separator = cache.get(model, dev)
+
+            def _cb(d: dict) -> None:
+                if d.get("state") == "end":
+                    frac, stage = compute_progress(d)
+                    on_progress(frac, stage)
+
+            kwargs = {"callback": _cb}
+            if seg is not None:
+                kwargs["segment"] = seg
+            separator.update_parameter(**kwargs)
+            try:
+                _origin, separated = separator.separate_audio_file(source_path)
+                return separated, separator.samplerate, dev
+            except RuntimeError as e:  # noqa: PERF203
+                last_err = e
+                if not _is_oom(e):
+                    raise
+                _empty_cuda_cache()
+    raise RuntimeError(f"Separation failed after OOM fallbacks: {last_err}")
