@@ -94,7 +94,7 @@ export function Upload({ onCreated }: { onCreated: (j: Job) => void }) {
           </label>
         ))}
       </fieldset>
-      <button onClick={submit} disabled={files.length === 0 || busy}>
+      <button className="btn-primary" onClick={submit} disabled={files.length === 0 || busy}>
         {files.length > 1 ? `Separate ${files.length} files` : "Separate"}
       </button>
     </div>
