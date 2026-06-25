@@ -1,4 +1,4 @@
-import type { CreateJobOpts, Job, ModelInfo } from "../types";
+import type { CreateJobOpts, Job, ModelInfo, MixdownRequest } from "../types";
 
 const BASE = "/api";
 
@@ -48,4 +48,30 @@ export async function cancelJob(id: string): Promise<Job> {
 
 export function stemUrl(id: string, stem: string): string {
   return `${BASE}/jobs/${id}/stems/${stem}`;
+}
+
+export interface MixdownOut {
+  id: string;
+  job_id: string;
+  name: string;
+  format: string;
+  created_at: string;
+}
+
+export async function createMixdown(jobId: string, req: MixdownRequest): Promise<MixdownOut> {
+  return json(
+    await fetch(`${BASE}/jobs/${jobId}/mixdown`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req),
+    }),
+  );
+}
+
+export function mixdownDownloadUrl(mid: string): string {
+  return `${BASE}/mixdowns/${mid}/download`;
+}
+
+export function sourceUrl(jobId: string): string {
+  return `${BASE}/jobs/${jobId}/source`;
 }

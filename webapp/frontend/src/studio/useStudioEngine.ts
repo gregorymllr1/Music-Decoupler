@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { StudioEngine } from "./StudioEngine";
-import { stemUrl } from "../api/client";
-import type { Job } from "../types";
+import { stemUrl, sourceUrl } from "../api/client";
+import type { Job, MixdownRequest } from "../types";
 
 export interface Channel {
   stem: string;
@@ -21,6 +21,7 @@ export function useStudioEngine(job: Job) {
   const [stems, setStems] = useState<string[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [master, setMaster] = useState(1);
+  const [abMode, setAbModeState] = useState<"original" | "mix">("mix");
   const [transport, setTransport] = useState({ playing: false, currentTime: 0, duration: 0 });
 
   useEffect(() => {
@@ -34,6 +35,7 @@ export function useStudioEngine(job: Job) {
       setChannels(engine.stems.map((stem) => ({ stem, volume: 1, muted: false, solo: false })));
       setTransport((t) => ({ ...t, duration: engine.duration }));
     });
+    engine.loadOriginal(sourceUrl(job.id)).catch(() => {});
     const tick = () => {
       const e = engineRef.current;
       if (e) setTransport({ playing: e.isPlaying, currentTime: e.currentTime, duration: e.duration });
@@ -54,11 +56,19 @@ export function useStudioEngine(job: Job) {
     stems,
     channels,
     master,
+    abMode,
     transport,
     setGain: (stem: string, v: number) => { engineRef.current?.setGain(stem, v); update(stem, { volume: v }); },
     setMute: (stem: string, b: boolean) => { engineRef.current?.setMute(stem, b); update(stem, { muted: b }); },
     setSolo: (stem: string, b: boolean) => { engineRef.current?.setSolo(stem, b); update(stem, { solo: b }); },
     setMaster: (v: number) => { engineRef.current?.setMasterGain(v); setMaster(v); },
+    setABMode: (m: "original" | "mix") => { engineRef.current?.setABMode(m); setAbModeState(m); },
+    buildMixdownRequest: (format: "wav" | "flac" | "mp3", name: string): MixdownRequest => ({
+      name, format,
+      bitrate: format === "mp3" ? 320 : undefined,
+      bitdepth: format === "wav" ? 16 : undefined,
+      tracks: channels.map((c) => ({ stem: c.stem, gain: c.volume, muted: c.muted })),
+    }),
     play: () => engineRef.current?.play(),
     pause: () => engineRef.current?.pause(),
     stop: () => engineRef.current?.stop(),

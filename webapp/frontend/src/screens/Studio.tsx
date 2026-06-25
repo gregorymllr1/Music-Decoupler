@@ -4,16 +4,26 @@ import { useStudioEngine } from "../studio/useStudioEngine";
 import { ChannelStrip } from "../studio/ChannelStrip";
 import { Transport } from "../studio/Transport";
 import { Waveform } from "../studio/Waveform";
-import { stemUrl } from "../api/client";
+import { ABToggle } from "../studio/ABToggle";
+import { ExportPanel } from "../studio/ExportPanel";
+import { stemUrl, createMixdown, mixdownDownloadUrl } from "../api/client";
 
 export function Studio({ job, onBack }: { job: Job; onBack: () => void }) {
   const s = useStudioEngine(job);
+
+  async function handleExport(format: "wav" | "flac" | "mp3", name: string) {
+    const req = s.buildMixdownRequest(format, name);
+    const out = await createMixdown(job.id, req);
+    window.location.href = mixdownDownloadUrl(out.id);
+  }
+
   return (
     <div className="studio">
       <header>
         <button onClick={onBack}>◀ Back</button>
         <strong>{job.source_filename}</strong>
         <span>{job.model} · {job.device_used ?? ""}</span>
+        <ABToggle mode={s.abMode} onMode={s.setABMode} />
       </header>
       <div className="tracks">
         {s.channels.map((c) => (
@@ -41,6 +51,7 @@ export function Studio({ job, onBack }: { job: Job; onBack: () => void }) {
         <input type="range" min={0} max={1.5} step={0.01} value={s.master}
           onChange={(e) => s.setMaster(Number(e.target.value))} />
       </label>
+      <ExportPanel onExport={handleExport} />
     </div>
   );
 }

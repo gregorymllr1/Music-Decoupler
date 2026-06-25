@@ -13,6 +13,8 @@ export class StudioEngine {
   private decode: (url: string) => Promise<AudioBuffer>;
   private master: GainNode;
   private tracks: Track[] = [];
+  private original: Track | null = null;
+  private abMode: "original" | "mix" = "mix";
   private playing = false;
   private offset = 0; // seconds into the timeline when paused
   private startedAt = 0; // ctx.currentTime when play() began
@@ -37,6 +39,16 @@ export class StudioEngine {
     }
   }
 
+  async loadOriginal(url: string): Promise<void> {
+    const buffer = await this.decode(url);
+    const gainNode = this.ctx.createGain();
+    gainNode.connect(this.master);
+    this.original = {
+      stem: "__original__", buffer, gainNode, source: null,
+      gain: 1, muted: false, solo: false,
+    };
+  }
+
   get stems(): string[] {
     return this.tracks.map((t) => t.stem);
   }
@@ -57,7 +69,13 @@ export class StudioEngine {
     return this.tracks.some((t) => t.solo);
   }
 
+  private allTracks(): Track[] {
+    return this.original ? [...this.tracks, this.original] : [...this.tracks];
+  }
+
   effectiveGain(stem: string): number {
+    if (this.abMode === "original") return stem === "__original__" ? 1 : 0;
+    if (stem === "__original__") return 0;
     const t = this.tracks.find((x) => x.stem === stem);
     if (!t) return 0;
     if (t.muted) return 0;
@@ -66,7 +84,7 @@ export class StudioEngine {
   }
 
   private applyGains(): void {
-    for (const t of this.tracks) {
+    for (const t of this.allTracks()) {
       t.gainNode.gain.setValueAtTime(this.effectiveGain(t.stem), this.ctx.currentTime);
     }
   }
@@ -95,6 +113,11 @@ export class StudioEngine {
     }
   }
 
+  setABMode(mode: "original" | "mix"): void {
+    this.abMode = mode;
+    this.applyGains();
+  }
+
   setMasterGain(v: number): void {
     this.master.gain.setValueAtTime(v, this.ctx.currentTime);
   }
@@ -102,7 +125,7 @@ export class StudioEngine {
   play(): void {
     if (this.playing) return;
     this.startedAt = this.ctx.currentTime - this.offset;
-    for (const t of this.tracks) {
+    for (const t of this.allTracks()) {
       const src = this.ctx.createBufferSource();
       src.buffer = t.buffer;
       src.connect(t.gainNode);
@@ -116,7 +139,7 @@ export class StudioEngine {
   pause(): void {
     if (!this.playing) return;
     this.offset = this.currentTime;
-    for (const t of this.tracks) {
+    for (const t of this.allTracks()) {
       t.source?.stop();
       t.source = null;
     }
