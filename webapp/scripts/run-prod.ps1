@@ -11,8 +11,11 @@ if (-not (Test-Path $venvPy)) {
 
 Push-Location "$root/frontend"; npm install; npm run build; Pop-Location
 
-# Worker in a new window (so its logs stay visible)
-Start-Process powershell -ArgumentList "-NoExit","-Command","cd '$root/backend'; '$venvPy' -m app.worker"
+# Worker in a new window (so its logs stay visible).
+# Wrap in & { ... } so PowerShell treats the inner command as a script block,
+# not as parameters to Start-Process itself (otherwise `-m app.worker` is
+# parsed as PowerShell syntax and fails with "Unexpected token").
+Start-Process powershell -ArgumentList "-NoExit","-Command","& { cd '$root/backend'; & '$venvPy' -m app.worker }"
 
 # API in the current window
 Push-Location "$root/backend"
