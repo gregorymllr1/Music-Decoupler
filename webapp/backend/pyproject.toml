@@ -1,0 +1,20 @@
+[project]
+name = "demucs-stem-studio-backend"
+version = "0.1.0"
+requires-python = ">=3.8"
+dependencies = [
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.29",
+  "pydantic>=2.6",
+  "pydantic-settings>=2.2",
+  "python-multipart>=0.0.9",
+  "soundfile>=0.12",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "httpx>=0.27"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+addopts = "-q"
+markers = ["integration: requires torch/demucs and model download (slow)"]
