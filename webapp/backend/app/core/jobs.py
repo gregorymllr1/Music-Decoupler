@@ -146,3 +146,21 @@ def set_meta(conn, key, value) -> None:
 def get_meta(conn, key) -> Optional[str]:
     r = conn.execute("SELECT value FROM meta WHERE key=?", (key,)).fetchone()
     return r["value"] if r else None
+
+
+def create_mixdown(conn, *, job_id, name, spec_json, path, fmt):
+    from app.core.schemas import MixdownOut
+
+    mid = uuid.uuid4().hex
+    now = _now()
+    conn.execute(
+        "INSERT INTO mixdowns (id,job_id,name,spec,path,format,created_at) VALUES (?,?,?,?,?,?,?)",
+        (mid, job_id, name, spec_json, str(path), fmt, now),
+    )
+    conn.commit()
+    return MixdownOut(id=mid, job_id=job_id, name=name, format=fmt, created_at=now)
+
+
+def get_mixdown(conn, mid):
+    row = conn.execute("SELECT * FROM mixdowns WHERE id=?", (mid,)).fetchone()
+    return dict(row) if row else None
