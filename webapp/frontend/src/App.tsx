@@ -48,8 +48,8 @@ export function App() {
       <h1>Demucs Stem Studio</h1>
       <HealthBanner />
       <nav>
-        <button onClick={() => setView("home")}>Home</button>
-        <button onClick={() => setView("library")}>Library</button>
+        <button className={view === "home" ? "nav-active" : ""} onClick={() => setView("home")}>Home</button>
+        <button className={view === "library" ? "nav-active" : ""} onClick={() => setView("library")}>Library</button>
       </nav>
       {view === "library"
         ? <Library jobs={jobs} onOpen={setOpenJob} onDelete={handleDelete} />

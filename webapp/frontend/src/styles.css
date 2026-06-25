@@ -127,6 +127,12 @@ nav button:hover {
   border-color: var(--accent-dim);
 }
 
+nav button.nav-active {
+  background: var(--accent-glow);
+  border-color: var(--accent-dim);
+  color: var(--accent);
+}
+
 /* ── Global Button ────────────────────────────────────────── */
 button {
   font-family: var(--font-ui);
