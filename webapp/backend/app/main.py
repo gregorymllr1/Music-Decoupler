@@ -9,8 +9,9 @@ def create_app() -> FastAPI:
     app = FastAPI(title="Demucs Stem Studio")
     init_db()  # idempotent; ensures tables exist for TestClient and dev runs alike
 
-    from app.api import routes_meta
+    from app.api import routes_meta, routes_jobs
     app.include_router(routes_meta.router)
+    app.include_router(routes_jobs.router)
     return app
 
 
