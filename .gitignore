@@ -13,6 +13,9 @@ Session.vim
 /release_models
 /separated
 /tests
+.claude/
+/webapp/backend/data/
+/webapp/backend/.venv/
 /trash
 /misc
 /mdx
