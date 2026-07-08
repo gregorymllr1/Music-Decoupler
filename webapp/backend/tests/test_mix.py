@@ -73,3 +73,27 @@ def test_render_range_past_end_yields_silence(tmp_path):
     data, _ = sf.read(str(out), always_2d=True)
     assert data.shape[0] == 1
     assert float(abs(data).max()) == 0.0
+
+
+def test_render_start_only_trims_beginning(tmp_path):
+    _write(tmp_path / "a.wav", 0.2, frames=44100)
+    resolve = lambda stem: tmp_path / f"{stem}.wav"
+    out = mix.render_mixdown(
+        [MixdownTrack(stem="a")], resolve, tmp_path / "mix.wav", "wav",
+        start_sec=0.5,
+    )
+    data, sr = sf.read(str(out))
+    assert sr == 44100
+    assert data.shape[0] == 44100 - int(0.5 * 44100)
+
+
+def test_render_end_only_trims_tail(tmp_path):
+    _write(tmp_path / "a.wav", 0.2, frames=44100)
+    resolve = lambda stem: tmp_path / f"{stem}.wav"
+    out = mix.render_mixdown(
+        [MixdownTrack(stem="a")], resolve, tmp_path / "mix.wav", "wav",
+        end_sec=0.5,
+    )
+    data, sr = sf.read(str(out))
+    assert sr == 44100
+    assert data.shape[0] == int(0.5 * 44100)
