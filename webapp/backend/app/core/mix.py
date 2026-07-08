@@ -70,8 +70,22 @@ def write_audio(mix: np.ndarray, sr: int, path, fmt: str,
         raise ValueError(f"Unsupported format: {fmt}")
 
 
+def _slice_range(mix: np.ndarray, sr: int,
+                 start_sec: float | None, end_sec: float | None) -> np.ndarray:
+    begin = int(start_sec * sr) if start_sec is not None else 0
+    stop = int(end_sec * sr) if end_sec is not None else mix.shape[0]
+    begin = max(0, min(begin, mix.shape[0]))
+    stop = max(begin, min(stop, mix.shape[0]))
+    out = mix[begin:stop]
+    if out.shape[0] == 0:
+        return np.zeros((1, mix.shape[1]), dtype="float32")
+    return out
+
+
 def render_mixdown(tracks: List, resolve_path: Callable, out_path, fmt: str,
-                   bitrate: int = 320, bitdepth: int = 16) -> Path:
+                   bitrate: int = 320, bitdepth: int = 16,
+                   start_sec: float | None = None, end_sec: float | None = None) -> Path:
     mix, sr = mix_tracks(tracks, resolve_path)
+    mix = _slice_range(mix, sr, start_sec, end_sec)
     write_audio(mix, sr, out_path, fmt, bitrate, bitdepth)
     return Path(out_path)
