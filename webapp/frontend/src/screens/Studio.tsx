@@ -1,6 +1,6 @@
 import React from "react";
 import type { Job } from "../types";
-import { useStudioEngine } from "../studio/useStudioEngine";
+import { useStudioEngine, REGION_EDGE_EPS } from "../studio/useStudioEngine";
 import { ChannelStrip } from "../studio/ChannelStrip";
 import { Transport } from "../studio/Transport";
 import { Waveform } from "../studio/Waveform";
@@ -14,7 +14,7 @@ export function Studio({ job, onBack }: { job: Job; onBack: () => void }) {
   const s = useStudioEngine(job);
   const dur = s.transport.duration;
   const pct = (t: number) => (dur > 0 ? Math.min(100, Math.max(0, (t / dur) * 100)) : 0);
-  const narrowed = dur > 0 && (s.region.start > 0.05 || s.region.end < dur - 0.05);
+  const narrowed = dur > 0 && (s.region.start > REGION_EDGE_EPS || s.region.end < dur - REGION_EDGE_EPS);
   const rangeSummary = narrowed
     ? `Selection ${fmtTime(s.region.start)} – ${fmtTime(s.region.end)} (${fmtTime(s.region.end - s.region.start)})`
     : "Full track";

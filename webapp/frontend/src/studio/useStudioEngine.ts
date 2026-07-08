@@ -16,7 +16,7 @@ export interface Region {
 }
 
 const MIN_REGION_GAP = 0.1; // seconds
-const REGION_EDGE_EPS = 0.05; // region within this of the edges counts as "full track"
+export const REGION_EDGE_EPS = 0.05; // region within this of the edges counts as "full track"
 
 async function decodeFromUrl(ctx: AudioContext, url: string): Promise<AudioBuffer> {
   const res = await fetch(url);
