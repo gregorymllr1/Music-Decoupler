@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Literal, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 JobStatus = Literal["queued", "running", "done", "failed", "canceled"]
 OutputFormat = Literal["wav", "flac", "mp3"]
@@ -52,7 +52,17 @@ class MixdownRequest(BaseModel):
     format: OutputFormat = "mp3"
     bitrate: Optional[int] = 320
     bitdepth: Optional[int] = 16
+    start_sec: Optional[float] = None
+    end_sec: Optional[float] = None
     tracks: List[MixdownTrack]
+
+    @model_validator(mode="after")
+    def _validate_range(self):
+        if self.start_sec is not None and self.start_sec < 0:
+            raise ValueError("start_sec must be >= 0")
+        if self.end_sec is not None and self.end_sec <= (self.start_sec or 0.0):
+            raise ValueError("end_sec must be greater than start_sec")
+        return self
 
 
 class MixdownOut(BaseModel):

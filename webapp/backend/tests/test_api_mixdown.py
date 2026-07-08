@@ -1,3 +1,5 @@
+import io
+
 import numpy as np
 import soundfile as sf
 from fastapi.testclient import TestClient
@@ -38,3 +40,30 @@ def test_create_and_download_mixdown(settings):
     mid = r.json()["id"]
     dl = client.get(f"/api/mixdowns/{mid}/download")
     assert dl.status_code == 200 and len(dl.content) > 0
+
+
+def test_create_mixdown_with_range(settings):
+    job = _finished_job(settings)  # stems are 4410 frames (0.1 s) at 44100 Hz
+    client = TestClient(create_app())
+    r = client.post(
+        f"/api/jobs/{job.id}/mixdown",
+        json={"name": "clip", "format": "wav", "start_sec": 0.02, "end_sec": 0.06,
+              "tracks": [{"stem": "drums", "gain": 1.0, "muted": False}]},
+    )
+    assert r.status_code == 200, r.text
+    dl = client.get(f"/api/mixdowns/{r.json()['id']}/download")
+    assert dl.status_code == 200
+    data, sr = sf.read(io.BytesIO(dl.content))
+    assert sr == 44100
+    assert data.shape[0] == int(0.06 * 44100) - int(0.02 * 44100)
+
+
+def test_create_mixdown_rejects_invalid_range(settings):
+    job = _finished_job(settings)
+    client = TestClient(create_app())
+    r = client.post(
+        f"/api/jobs/{job.id}/mixdown",
+        json={"name": "clip", "format": "wav", "start_sec": 3.0, "end_sec": 1.0,
+              "tracks": [{"stem": "drums", "gain": 1.0, "muted": False}]},
+    )
+    assert r.status_code == 422

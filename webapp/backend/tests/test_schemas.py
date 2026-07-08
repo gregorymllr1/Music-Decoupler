@@ -1,3 +1,6 @@
+import pytest
+from pydantic import ValidationError
+
 from app.core.schemas import JobCreate, JobOut, MixdownRequest
 
 
@@ -26,3 +29,23 @@ def test_mixdown_request_validation():
     m = MixdownRequest(tracks=[{"stem": "vocals", "gain": 0.0, "muted": True}])
     assert m.tracks[0].muted is True
     assert m.format == "mp3"
+
+
+def test_mixdown_request_accepts_valid_range():
+    m = MixdownRequest(tracks=[{"stem": "v"}], start_sec=1.0, end_sec=2.5)
+    assert m.start_sec == 1.0
+    assert m.end_sec == 2.5
+
+
+def test_mixdown_request_defaults_have_no_range():
+    m = MixdownRequest(tracks=[{"stem": "v"}])
+    assert m.start_sec is None and m.end_sec is None
+
+
+def test_mixdown_request_rejects_bad_ranges():
+    with pytest.raises(ValidationError):
+        MixdownRequest(tracks=[{"stem": "v"}], start_sec=-1.0)
+    with pytest.raises(ValidationError):
+        MixdownRequest(tracks=[{"stem": "v"}], start_sec=2.0, end_sec=2.0)
+    with pytest.raises(ValidationError):
+        MixdownRequest(tracks=[{"stem": "v"}], end_sec=0.0)

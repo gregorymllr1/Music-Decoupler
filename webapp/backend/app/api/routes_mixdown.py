@@ -31,7 +31,8 @@ def create_mixdown_route(jid: str, req: MixdownRequest):
         mid = uuid.uuid4().hex
         out = paths.mixdown_path(jid, mid, req.format)
         mix.render_mixdown([t for t in req.tracks], resolve, out, req.format,
-                           bitrate=req.bitrate or 320, bitdepth=req.bitdepth or 16)
+                           bitrate=req.bitrate or 320, bitdepth=req.bitdepth or 16,
+                           start_sec=req.start_sec, end_sec=req.end_sec)
         return jobs.create_mixdown(
             conn, job_id=jid, name=req.name,
             spec_json=json.dumps(req.model_dump()), path=out, fmt=req.format,
