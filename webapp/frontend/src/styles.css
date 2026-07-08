@@ -45,6 +45,8 @@
   --radius: 6px;
   --radius-sm: 4px;
   --radius-lg: 10px;
+  /* Layout */
+  --track-gutter: 160px;
 }
 
 /* ── Reset ────────────────────────────────────────────────── */
@@ -590,11 +592,12 @@ select:focus {
   flex-direction: column;
   overflow-y: auto;
   padding: var(--sp-2) 0;
+  position: relative;
 }
 
 .track-row {
   display: grid;
-  grid-template-columns: 160px 1fr;
+  grid-template-columns: var(--track-gutter) 1fr;
   align-items: center;
   border-bottom: 1px solid var(--border-subtle);
   min-height: 72px;
@@ -602,6 +605,138 @@ select:focus {
 
 .track-row:last-child {
   border-bottom: none;
+}
+
+/* ── Region Timeline ──────────────────────────────────────── */
+.region-timeline {
+  display: grid;
+  grid-template-columns: var(--track-gutter) 1fr;
+  align-items: center;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.region-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-4);
+  border-right: 1px solid var(--border-subtle);
+}
+
+.region-times {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.region-info button {
+  min-height: 20px;
+  padding: 2px 8px;
+  font-size: 0.625rem;
+  background: var(--surface-raise);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+}
+
+.region-info button:hover {
+  color: var(--text);
+  border-color: var(--accent-dim);
+}
+
+.region-track {
+  position: relative;
+  height: 32px;
+  margin: 0 var(--sp-4);
+  cursor: pointer;
+}
+
+.region-track::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  margin-top: -1px;
+  background: var(--border-subtle);
+  border-radius: 1px;
+}
+
+.region-shade {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  background: var(--accent-glow);
+  border: 1px solid var(--accent-dim);
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+}
+
+.region-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  margin-left: -6px;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.region-handle::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 2px;
+  bottom: 2px;
+  width: 3px;
+  margin-left: -1.5px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+.region-handle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.region-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--text);
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+/* ── Region overlay across waveforms ──────────────────────── */
+.tracks-overlay {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--track-gutter) + var(--sp-4));
+  right: var(--sp-4);
+  pointer-events: none;
+}
+
+.overlay-dim {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(10, 11, 18, 0.55);
+}
+
+.overlay-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--text);
+  opacity: 0.55;
 }
 
 /* ── Channel Strip ────────────────────────────────────────── */
@@ -820,6 +955,13 @@ select:focus {
   background: #8ab4ff;
 }
 
+.export-range {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
 /* ── Range Input Global Reset ─────────────────────────────── */
 input[type="range"] {
   -webkit-appearance: none;
@@ -878,8 +1020,8 @@ input[type="range"]::-moz-range-thumb {
     padding: var(--sp-4) var(--sp-3);
   }
 
-  .track-row {
-    grid-template-columns: 120px 1fr;
+  :root {
+    --track-gutter: 120px;
   }
 
   .channel-strip {

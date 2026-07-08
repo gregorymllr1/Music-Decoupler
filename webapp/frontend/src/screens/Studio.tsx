@@ -6,10 +6,18 @@ import { Transport } from "../studio/Transport";
 import { Waveform } from "../studio/Waveform";
 import { ABToggle } from "../studio/ABToggle";
 import { ExportPanel } from "../studio/ExportPanel";
+import { RegionTimeline } from "../studio/RegionTimeline";
+import { fmtTime } from "../studio/time";
 import { stemUrl, createMixdown, mixdownDownloadUrl } from "../api/client";
 
 export function Studio({ job, onBack }: { job: Job; onBack: () => void }) {
   const s = useStudioEngine(job);
+  const dur = s.transport.duration;
+  const pct = (t: number) => (dur > 0 ? Math.min(100, Math.max(0, (t / dur) * 100)) : 0);
+  const narrowed = dur > 0 && (s.region.start > 0.05 || s.region.end < dur - 0.05);
+  const rangeSummary = narrowed
+    ? `Selection ${fmtTime(s.region.start)} – ${fmtTime(s.region.end)} (${fmtTime(s.region.end - s.region.start)})`
+    : "Full track";
 
   async function handleExport(format: "wav" | "flac" | "mp3", name: string) {
     const req = s.buildMixdownRequest(format, name);
@@ -25,6 +33,13 @@ export function Studio({ job, onBack }: { job: Job; onBack: () => void }) {
         <span>{job.model} · {job.device_used ?? ""}</span>
         <ABToggle mode={s.abMode} onMode={s.setABMode} />
       </header>
+      <RegionTimeline
+        duration={dur}
+        currentTime={s.transport.currentTime}
+        region={s.region}
+        onRegionChange={s.setRegion}
+        onSeek={s.seek}
+      />
       <div className="tracks">
         {s.channels.map((c) => (
           <div className="track-row" key={c.stem}>
@@ -37,6 +52,11 @@ export function Studio({ job, onBack }: { job: Job; onBack: () => void }) {
             <Waveform url={stemUrl(job.id, c.stem)} />
           </div>
         ))}
+        <div className="tracks-overlay" aria-hidden="true">
+          <div className="overlay-dim" style={{ left: 0, width: `${pct(s.region.start)}%` }} />
+          <div className="overlay-dim" style={{ left: `${pct(s.region.end)}%`, right: 0 }} />
+          <div className="overlay-playhead" style={{ left: `${pct(s.transport.currentTime)}%` }} />
+        </div>
       </div>
       <Transport
         playing={s.transport.playing}
@@ -45,13 +65,14 @@ export function Studio({ job, onBack }: { job: Job; onBack: () => void }) {
         onPlayPause={() => (s.transport.playing ? s.pause() : s.play())}
         onStop={s.stop}
         onSeek={s.seek}
+        onPlaySelection={s.playSelection}
       />
       <label className="master">
         Master
         <input type="range" min={0} max={1.5} step={0.01} value={s.master}
           onChange={(e) => s.setMaster(Number(e.target.value))} />
       </label>
-      <ExportPanel onExport={handleExport} />
+      <ExportPanel onExport={handleExport} rangeSummary={rangeSummary} />
     </div>
   );
 }

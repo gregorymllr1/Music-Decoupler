@@ -21,4 +21,9 @@ describe("ExportPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: /export/i }));
     expect(onExport).toHaveBeenCalledWith("flac", "karaoke");
   });
+
+  it("shows the export range summary when provided", () => {
+    render(<ExportPanel onExport={vi.fn()} rangeSummary="Selection 0:02 – 0:08 (0:06)" />);
+    expect(screen.getByText("Selection 0:02 – 0:08 (0:06)")).toBeTruthy();
+  });
 });

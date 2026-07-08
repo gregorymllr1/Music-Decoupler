@@ -1,7 +1,10 @@
 import React, { useState } from "react";
 import type { OutputFormat } from "../types";
 
-export function ExportPanel({ onExport }: { onExport: (format: OutputFormat, name: string) => void }) {
+export function ExportPanel({ onExport, rangeSummary }: {
+  onExport: (format: OutputFormat, name: string) => void;
+  rangeSummary?: string;
+}) {
   const [format, setFormat] = useState<OutputFormat>("mp3");
   const [name, setName] = useState("mixdown");
   return (
@@ -18,6 +21,7 @@ export function ExportPanel({ onExport }: { onExport: (format: OutputFormat, nam
           <option value="wav">WAV</option>
         </select>
       </label>
+      {rangeSummary ? <span className="export-range">{rangeSummary}</span> : null}
       <button onClick={() => onExport(format, name)}>Export mixdown</button>
     </div>
   );
