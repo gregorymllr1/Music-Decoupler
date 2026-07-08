@@ -42,5 +42,7 @@ export interface MixdownRequest {
   format: OutputFormat;
   bitrate?: number;
   bitdepth?: number;
+  start_sec?: number;
+  end_sec?: number;
   tracks: MixdownTrack[];
 }
