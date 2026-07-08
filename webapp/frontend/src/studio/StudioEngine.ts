@@ -18,6 +18,8 @@ export class StudioEngine {
   private playing = false;
   private offset = 0; // seconds into the timeline when paused
   private startedAt = 0; // ctx.currentTime when play() began
+  private stopAtTime: number | null = null; // bounded-playback stop point (seconds)
+  private playToken = 0; // invalidates stale onended callbacks
 
   constructor(ctx: AudioContext, decode: (url: string) => Promise<AudioBuffer>) {
     this.ctx = ctx;
@@ -62,7 +64,8 @@ export class StudioEngine {
   }
 
   get currentTime(): number {
-    return this.playing ? this.ctx.currentTime - this.startedAt : this.offset;
+    const raw = this.playing ? this.ctx.currentTime - this.startedAt : this.offset;
+    return this.playing && this.stopAtTime != null ? Math.min(raw, this.stopAtTime) : raw;
   }
 
   private anySolo(): boolean {
@@ -122,15 +125,28 @@ export class StudioEngine {
     this.master.gain.setValueAtTime(v, this.ctx.currentTime);
   }
 
-  play(): void {
+  play(stopAt?: number): void {
     if (this.playing) return;
     this.startedAt = this.ctx.currentTime - this.offset;
+    this.stopAtTime = stopAt != null && stopAt > this.offset ? stopAt : null;
+    const token = ++this.playToken;
+    let first = true;
     for (const t of this.allTracks()) {
       const src = this.ctx.createBufferSource();
       src.buffer = t.buffer;
       src.connect(t.gainNode);
-      src.start(0, this.offset);
+      if (this.stopAtTime != null) {
+        src.start(0, this.offset, this.stopAtTime - this.offset);
+        if (first) {
+          src.onended = () => {
+            if (this.playToken === token && this.playing) this.pause();
+          };
+        }
+      } else {
+        src.start(0, this.offset);
+      }
       t.source = src;
+      first = false;
     }
     this.applyGains();
     this.playing = true;
@@ -138,10 +154,15 @@ export class StudioEngine {
 
   pause(): void {
     if (!this.playing) return;
-    this.offset = this.currentTime;
+    this.offset = this.currentTime; // clamped to stopAtTime when bounded
+    this.stopAtTime = null;
     for (const t of this.allTracks()) {
-      t.source?.stop();
+      const src = t.source;
       t.source = null;
+      if (src) {
+        src.onended = null;
+        src.stop();
+      }
     }
     this.playing = false;
   }
@@ -156,5 +177,11 @@ export class StudioEngine {
     if (wasPlaying) this.pause();
     this.offset = Math.max(0, Math.min(t, this.duration));
     if (wasPlaying) this.play();
+  }
+
+  playSelection(start: number, end: number): void {
+    if (this.playing) this.pause();
+    this.offset = Math.max(0, Math.min(start, this.duration));
+    this.play(Math.min(end, this.duration));
   }
 }

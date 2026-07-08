@@ -15,8 +15,13 @@ class FakeSource {
 class FakeCtx {
   currentTime = 0;
   destination = {};
+  sources: FakeSource[] = [];
   createGain = () => new FakeGain();
-  createBufferSource = () => new FakeSource();
+  createBufferSource = () => {
+    const s = new FakeSource();
+    this.sources.push(s);
+    return s;
+  };
 }
 
 function buffer(dur = 10) {
@@ -67,5 +72,41 @@ describe("StudioEngine", () => {
     engine.pause();
     expect(engine.isPlaying).toBe(false);
     expect(engine.currentTime).toBeCloseTo(3, 5);
+  });
+
+  it("play with stopAt schedules bounded sources", () => {
+    engine.seek(2);
+    engine.play(8);
+    expect(ctx.sources[0].start).toHaveBeenCalledWith(0, 2, 6);
+  });
+
+  it("flips to paused at stopAt when sources end", () => {
+    engine.play(8);
+    ctx.currentTime = 8;
+    ctx.sources[0].onended?.();
+    expect(engine.isPlaying).toBe(false);
+    expect(engine.currentTime).toBe(8);
+  });
+
+  it("currentTime never reads past stopAt while playing", () => {
+    engine.play(8);
+    ctx.currentTime = 9.5;
+    expect(engine.currentTime).toBe(8);
+  });
+
+  it("manual pause before stopAt keeps the paused position", () => {
+    engine.play(8);
+    ctx.currentTime = 3;
+    engine.pause();
+    ctx.sources[0].onended?.(); // fires async after stop() in real browsers
+    expect(engine.isPlaying).toBe(false);
+    expect(engine.currentTime).toBeCloseTo(3, 5);
+  });
+
+  it("playSelection seeks to start and bounds playback at end", () => {
+    engine.playSelection(2, 8);
+    expect(engine.isPlaying).toBe(true);
+    expect(engine.currentTime).toBeCloseTo(2, 5);
+    expect(ctx.sources[0].start).toHaveBeenCalledWith(0, 2, 6);
   });
 });
