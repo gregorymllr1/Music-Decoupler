@@ -45,7 +45,7 @@ export function App() {
 
   return (
     <div className="app">
-      <h1>Demucs Stem Studio</h1>
+      <h1>Instrumental Detangler</h1>
       <HealthBanner />
       <nav>
         <button className={view === "home" ? "nav-active" : ""} onClick={() => setView("home")}>Home</button>

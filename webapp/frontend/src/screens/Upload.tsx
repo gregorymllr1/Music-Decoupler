@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createJob, listModels } from "../api/client";
 import type { Job, ModelInfo, OutputFormat } from "../types";
 
@@ -11,6 +11,7 @@ export function Upload({ onCreated }: { onCreated: (j: Job) => void }) {
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     listModels().then(setModels).catch(() => setModels([]));
@@ -52,13 +53,31 @@ export function Upload({ onCreated }: { onCreated: (j: Job) => void }) {
 
   return (
     <div className="upload">
-      <input
-        data-testid="file-input"
-        type="file"
-        multiple
-        accept=".mp3,.flac,.wav,.ogg,.m4a"
-        onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
-      />
+      <div className="upload-pick-row">
+        <input
+          ref={inputRef}
+          data-testid="file-input"
+          type="file"
+          multiple
+          accept=".mp3,.flac,.wav,.ogg,.m4a"
+          onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+          style={{ display: "none" }}
+        />
+        <button
+          type="button"
+          className="btn-load-track"
+          onClick={() => inputRef.current?.click()}
+        >
+          Load Track
+        </button>
+        <span className="upload-picked">
+          {files.length === 0
+            ? "No tracks selected"
+            : files.length === 1
+              ? files[0].name
+              : `${files.length} tracks selected`}
+        </span>
+      </div>
       <select value={model} onChange={(e) => setModel(e.target.value)}>
         {models.map((m) => (
           <option key={m.name} value={m.name}>{m.name}</option>
