@@ -53,10 +53,14 @@ describe("TimelineOverview", () => {
   it("drags the window box to pan, preserving the grab offset", () => {
     const { onViewChange } = setup();
     const box = screen.getByTestId("overview-window");
-    // Grab at 45s (5s into a 40-50s window), drop at 60s => window 55-65.
-    fireEvent.pointerDown(box, { clientX: 45, pointerId: 1 });
+    // Grab at 42s (2s into a 40-50s window — deliberately off-center so this
+    // test can't be satisfied by a re-centering implementation), drop at 60s.
+    // Correct pan-by-delta: start = 60 - 2 = 58, giving window 58-68.
+    // A broken re-centering implementation would give start = 60 - 5 = 55,
+    // which this assertion would catch.
+    fireEvent.pointerDown(box, { clientX: 42, pointerId: 1 });
     fireEvent.pointerMove(box, { clientX: 60, pointerId: 1 });
-    expect(onViewChange).toHaveBeenLastCalledWith(55, 65);
+    expect(onViewChange).toHaveBeenLastCalledWith(58, 68);
   });
 
   it("does not centre the view when the box itself is grabbed", () => {
