@@ -58,7 +58,7 @@ describe("useTimelineView", () => {
   });
 
   it("anchors on the playhead when it is inside the view", () => {
-    expect(zoomAnchor({ start: 40, end: 50 }, 45)).toBe(45);
+    expect(zoomAnchor({ start: 40, end: 50 }, 42)).toBe(42);
   });
 
   it("anchors on the view centre when the playhead is outside it", () => {
