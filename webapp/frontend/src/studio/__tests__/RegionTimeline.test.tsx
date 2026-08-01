@@ -19,11 +19,11 @@ const rect = {
   toJSON: () => ({}),
 } as DOMRect;
 
-function setup(region = { start: 10, end: 60 }) {
+function setup(region = { start: 10, end: 60 }, view = { start: 0, end: 100 }) {
   const onRegionChange = vi.fn();
   const onSeek = vi.fn();
   render(
-    <RegionTimeline duration={100} currentTime={5} region={region}
+    <RegionTimeline duration={100} currentTime={5} region={region} view={view}
       onRegionChange={onRegionChange} onSeek={onSeek} />,
   );
   const track = screen.getByTestId("region-track");
@@ -78,5 +78,33 @@ describe("RegionTimeline", () => {
     const handle = screen.getByRole("slider", { name: /region start/i });
     fireEvent.pointerDown(handle, { clientX: 10, pointerId: 1 });
     expect(onSeek).not.toHaveBeenCalled();
+  });
+
+  it("maps drags to the visible window when zoomed", () => {
+    // 100px wide showing 40s-50s: x=50 is halfway, i.e. t=45.
+    const { onRegionChange } = setup({ start: 42, end: 48 }, { start: 40, end: 50 });
+    const handle = screen.getByRole("slider", { name: /region start/i });
+    fireEvent.pointerDown(handle, { clientX: 20, pointerId: 1 });
+    fireEvent.pointerMove(handle, { clientX: 50, pointerId: 1 });
+    expect(onRegionChange).toHaveBeenLastCalledWith(45, 48);
+  });
+
+  it("seeks to view-relative time when zoomed", () => {
+    const { onSeek, track } = setup({ start: 42, end: 48 }, { start: 40, end: 50 });
+    fireEvent.pointerDown(track, { clientX: 25, pointerId: 1 });
+    expect(onSeek).toHaveBeenCalledWith(42.5);
+  });
+
+  it("scales the arrow nudge to the zoom level", () => {
+    // 100px showing 1s => 0.01s per pixel, finer than the 0.1s default.
+    const { onRegionChange } = setup({ start: 42, end: 48 }, { start: 42, end: 43 });
+    const start = screen.getByRole("slider", { name: /region start/i });
+    fireEvent.keyDown(start, { key: "ArrowRight" });
+    expect(onRegionChange.mock.calls[0][0]).toBeCloseTo(42.01, 6);
+  });
+
+  it("shows sub-second times when zoomed in", () => {
+    setup({ start: 42.1837, end: 42.9 }, { start: 42, end: 43 });
+    expect(screen.getByText(/0:42\.184 – 0:42\.900/)).toBeTruthy();
   });
 });

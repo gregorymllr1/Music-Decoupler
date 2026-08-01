@@ -37,6 +37,7 @@ export function Studio({ job, onBack }: { job: Job; onBack: () => void }) {
         duration={dur}
         currentTime={s.transport.currentTime}
         region={s.region}
+        view={{ start: 0, end: dur }}
         onRegionChange={s.setRegion}
         onSeek={s.seek}
       />

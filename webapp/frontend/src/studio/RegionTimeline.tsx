@@ -1,10 +1,12 @@
 import React, { useRef } from "react";
-import { fmtTime } from "./time";
+import { fmtTime, decimalsForSpan } from "./time";
+import type { View } from "./useTimelineView";
 
 export interface RegionTimelineProps {
   duration: number;
   currentTime: number;
   region: { start: number; end: number };
+  view: View;
   onRegionChange: (start: number, end: number) => void;
   onSeek: (t: number) => void;
 }
@@ -13,16 +15,26 @@ export function RegionTimeline(p: RegionTimelineProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const dragging = useRef<"start" | "end" | null>(null);
 
+  const span = p.view.end - p.view.start;
+  const dec = decimalsForSpan(span);
+
   const pct = (t: number) =>
-    p.duration > 0 ? Math.min(100, Math.max(0, (t / p.duration) * 100)) : 0;
+    span > 0 ? Math.min(100, Math.max(0, ((t - p.view.start) / span) * 100)) : 0;
 
   const timeFromClientX = (clientX: number): number => {
     const el = trackRef.current;
-    if (!el || p.duration <= 0) return 0;
+    if (!el || span <= 0) return 0;
     const rect = el.getBoundingClientRect();
     if (rect.width <= 0) return 0;
     const x = Math.min(Math.max(clientX - rect.left, 0), rect.width);
-    return (x / rect.width) * p.duration;
+    return p.view.start + (x / rect.width) * span;
+  };
+
+  /** One pixel of the current view, never coarser than the old 0.1s default. */
+  const nudgeStep = (): number => {
+    const w = trackRef.current?.getBoundingClientRect().width ?? 0;
+    if (!(w > 0) || !(span > 0)) return 0.1;
+    return Math.min(0.1, span / w);
   };
 
   const moveHandle = (which: "start" | "end", t: number) => {
@@ -44,7 +56,8 @@ export function RegionTimeline(p: RegionTimelineProps) {
       dragging.current = null;
     },
     onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => {
-      const step = e.shiftKey ? 1 : 0.1;
+      const base = nudgeStep();
+      const step = e.shiftKey ? base * 10 : base;
       const delta = e.key === "ArrowLeft" ? -step : e.key === "ArrowRight" ? step : 0;
       if (!delta) return;
       e.preventDefault();
@@ -56,7 +69,7 @@ export function RegionTimeline(p: RegionTimelineProps) {
     <div className="region-timeline">
       <div className="region-info">
         <span className="region-times">
-          {fmtTime(p.region.start)} – {fmtTime(p.region.end)} ({fmtTime(p.region.end - p.region.start)})
+          {fmtTime(p.region.start, dec)} – {fmtTime(p.region.end, dec)} ({fmtTime(p.region.end - p.region.start, dec)})
         </span>
         <button aria-label="reset region" onClick={() => p.onRegionChange(0, p.duration)}>
           Reset
