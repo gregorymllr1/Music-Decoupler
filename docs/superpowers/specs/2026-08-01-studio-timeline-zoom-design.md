@@ -97,8 +97,8 @@ becomes non-zero.
 
 Rendered in the ruler's gutter cell and on the ruler itself:
 
-- `[−]` `[+]` — `ZOOM_STEP` per click, anchored on the playhead when it is
-  inside the view, otherwise the view centre.
+- `[−]` `[+]` — `zoomBy(ZOOM_STEP, …)` and `zoomBy(1 / ZOOM_STEP, …)`, anchored
+  on the playhead when it is inside the view, otherwise the view centre.
 - `[Fit]` — whole track.
 - `[⤢ Sel]` — `zoomToSelection`.
 - `Ctrl`/`Cmd` + wheel over the ruler — zoom about the time under the cursor.
@@ -121,14 +121,14 @@ All zoom controls are disabled while `duration === 0`.
   seconds, so 59.96 s at one decimal renders `1:00.0`, not `0:60.0`.
 - Negative input clamps to 0.
 
-The Studio picks decimals from the visible span:
+The Studio picks decimals from the visible span, first match wins:
 
-| Span        | Decimals | Example    |
-| ----------- | -------- | ---------- |
-| > 60 s      | 0        | `0:43`     |
-| 10–60 s     | 1        | `0:43.2`   |
-| 1–10 s      | 2        | `0:43.18`  |
-| < 1 s       | 3        | `0:43.184` |
+| Test          | Decimals | Example    |
+| ------------- | -------- | ---------- |
+| `span > 60`   | 0        | `0:43`     |
+| `span > 10`   | 1        | `0:43.2`   |
+| `span > 1`    | 2        | `0:43.18`  |
+| otherwise     | 3        | `0:43.184` |
 
 The same `decimals` applies to the region start, end, **and** length, so at
 full-track view the readout still reads `0:10 – 1:00 (0:50)`.
@@ -176,6 +176,13 @@ interface PeakPyramid {
   sampleRate: number;
   length: number;         // source sample count
 }
+
+// What a Waveform needs to draw itself at any zoom level: the pyramid for
+// zoomed-out columns, the source for the raw-sample tier.
+interface WaveformData {
+  source: AudioSourceLike;
+  pyramid: PeakPyramid;
+}
 ```
 
 - `buildPeakPyramid(source, bucketSize = PEAK_BUCKET)` — one pass over the
@@ -198,13 +205,15 @@ audio only. `Studio.tsx` composes both hooks.
 
 ### `studio/Waveform.tsx` (rewritten)
 
-Props `{ peaks: PeakPyramid | null, source: AudioSourceLike | null, view, height }`.
+Props `{ data: WaveformData | null, view, height }`. `null` means the stem is
+still decoding — the canvas renders empty rather than erroring.
 
 - Renders a `<canvas>` sized to its container via `ResizeObserver`, scaled by
   `devicePixelRatio`.
 - Redraws on `view`/size change, coalesced through `requestAnimationFrame`.
-- Draws the min/max envelope plus a centre line, colour read from the existing
-  accent CSS custom property with `#7aa2f7` as fallback (today's colour).
+- Draws the min/max envelope plus a centre line, colour read from `--accent`
+  (already `#7aa2f7`, the colour `Waveform.tsx` hardcodes today) with that value
+  as the fallback.
 - Guards a null 2D context — jsdom does not implement one, and the guard is
   harmless in production.
 - No fetch, no URL, no wavesurfer.
@@ -243,17 +252,19 @@ changes.
 
 ### `studio/useStudioEngine.ts` (modified)
 
-After `engine.load(...)` resolves, build a peak pyramid per stem and expose them
-as `peaks: Record<string, PeakPyramid>`. Build them **one stem at a time,
+After `engine.load(...)` resolves, build a peak pyramid per stem and expose
+`waveforms: Record<string, WaveformData>` — each entry pairing the pyramid with
+the buffer from `engine.getBuffer(stem)`. Build them **one stem at a time,
 yielding between stems** (`requestIdleCallback`, falling back to
 `setTimeout(0)`) so the main thread paints between passes — waveforms appear
-progressively instead of freezing the UI for ~300 ms on a 4-stem job.
+progressively instead of freezing the UI for ~300 ms on a 4-stem job. Stems not
+yet built are simply absent from the record, so `Waveform` receives `null`.
 
 ### `screens/Studio.tsx` (modified)
 
 Composes `useTimelineView`, passes `view` to `RegionTimeline`, each `Waveform`,
 and the `.tracks-overlay` dim/playhead math. Hosts the keyboard shortcut
-listener. Passes each stem's pyramid and source buffer to its `Waveform`.
+listener. Passes each stem's `WaveformData` (or `null`) to its `Waveform`.
 
 ### `package.json`
 
