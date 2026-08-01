@@ -72,7 +72,11 @@ def _migrate(conn: sqlite3.Connection) -> None:
     cols = {r["name"] for r in conn.execute("PRAGMA table_info(jobs)").fetchall()}
     for name, decl in _JOBS_COLUMN_MIGRATIONS.items():
         if name not in cols:
-            conn.execute(f"ALTER TABLE jobs ADD COLUMN {name} {decl}")
+            try:
+                conn.execute(f"ALTER TABLE jobs ADD COLUMN {name} {decl}")
+            except sqlite3.OperationalError as e:
+                if "duplicate column" not in str(e).lower():
+                    raise
 
 
 def init_db(conn: sqlite3.Connection | None = None) -> None:

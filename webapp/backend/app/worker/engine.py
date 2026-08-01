@@ -48,7 +48,8 @@ def run_separation(*, source_path: str, model: str, device: str,
             frac, stage = compute_progress(d, total_shifts=shifts)
             on_progress(frac, stage)
 
-    separator.update_parameter(callback=_cb, shifts=shifts, overlap=overlap)
+    separator.update_parameter(callback=_cb, shifts=shifts, overlap=overlap,
+                               segment=None)
     _origin, separated = separator.separate_audio_file(source_path)
     return separated, separator.samplerate
 

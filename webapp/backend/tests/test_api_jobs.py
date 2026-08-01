@@ -66,6 +66,22 @@ def test_upload_accepts_quality_fields(settings, monkeypatch):
     assert job["shifts"] == 2 and job["overlap"] == 0.5
 
 
+def test_upload_rejects_out_of_range_quality(settings):
+    client = _client(settings)
+    r = client.post(
+        "/api/jobs",
+        files={"file": ("clip.wav", _wav_bytes(), "audio/wav")},
+        data={"shifts": "99"},
+    )
+    assert r.status_code == 422
+    r = client.post(
+        "/api/jobs",
+        files={"file": ("clip.wav", _wav_bytes(), "audio/wav")},
+        data={"overlap": "0.95"},
+    )
+    assert r.status_code == 422
+
+
 def test_upload_defaults_quality_fields(settings, monkeypatch):
     monkeypatch.setattr("app.api.routes_jobs.probe", lambda p: (0.1, "wav"))
     client = _client(settings)

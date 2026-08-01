@@ -4,5 +4,6 @@ frontend/dist/
 backend/.venv/
 __pycache__/
 *.pyc
+# compiled artifacts of the .tsx/.ts source; if committed they shadow it at Vite resolution
 frontend/src/**/*.js
 frontend/src/**/*.js.map
