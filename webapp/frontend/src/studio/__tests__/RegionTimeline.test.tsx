@@ -115,6 +115,13 @@ describe("RegionTimeline", () => {
     expect(screen.getByText(/0:42\.184 – 0:42\.900/)).toBeTruthy();
   });
 
+  it("keeps whole-second precision for the loading state (zero-span view)", () => {
+    // Before duration loads, view is {start:0, end:0}; span is 0 and must not
+    // fall into decimalsForSpan's <1s branch (which would show "0:00.000").
+    setup({ start: 0, end: 0 }, { start: 0, end: 0 });
+    expect(screen.getByText("0:00 – 0:00 (0:00)")).toBeTruthy();
+  });
+
   it("zooms about the playhead when it is inside the view", () => {
     const { onZoom } = setup({ start: 10, end: 60 }, { start: 0, end: 100 });
     fireEvent.click(screen.getByRole("button", { name: /zoom in/i }));

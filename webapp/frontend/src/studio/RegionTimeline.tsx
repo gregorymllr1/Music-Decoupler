@@ -22,7 +22,7 @@ export function RegionTimeline(p: RegionTimelineProps) {
   const dragging = useRef<"start" | "end" | null>(null);
 
   const span = p.view.end - p.view.start;
-  const dec = decimalsForSpan(span);
+  const dec = span > 0 ? decimalsForSpan(span) : 0;
 
   const pct = (t: number) =>
     span > 0 ? Math.min(100, Math.max(0, ((t - p.view.start) / span) * 100)) : 0;

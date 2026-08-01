@@ -46,7 +46,7 @@
   --radius-sm: 4px;
   --radius-lg: 10px;
   /* Layout */
-  --track-gutter: 160px;
+  --track-gutter: 200px;
 }
 
 /* ── Reset ────────────────────────────────────────────────── */
@@ -758,6 +758,7 @@ select:focus {
   gap: var(--sp-2);
   padding: var(--sp-2) var(--sp-4);
   border-right: 1px solid var(--border-subtle);
+  min-width: 0;
 }
 
 .region-times {
@@ -765,6 +766,8 @@ select:focus {
   font-size: 0.6875rem;
   color: var(--text-dim);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .region-info button {
@@ -1244,7 +1247,7 @@ input[type="range"]::-moz-range-thumb {
   }
 
   :root {
-    --track-gutter: 120px;
+    --track-gutter: 150px;
   }
 
   .channel-strip {
