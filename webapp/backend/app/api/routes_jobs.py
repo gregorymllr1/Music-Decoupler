@@ -20,6 +20,8 @@ async def create_job_route(
     output_format: str = Form("wav"),
     output_bitrate: Optional[int] = Form(320),
     output_bitdepth: Optional[int] = Form(16),
+    shifts: int = Form(1),
+    overlap: float = Form(0.25),
     stems: Optional[str] = Form(None),
     batch_id: Optional[str] = Form(None),
 ):
@@ -39,6 +41,8 @@ async def create_job_route(
         output_format=output_format,
         output_bitrate=output_bitrate,
         output_bitdepth=output_bitdepth,
+        shifts=shifts,
+        overlap=overlap,
         requested_stems=[s for s in stems.split(",") if s] if stems else None,
         batch_id=batch_id,
     )

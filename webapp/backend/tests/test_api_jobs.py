@@ -50,3 +50,26 @@ def test_delete_job(settings, monkeypatch):
     jid = client.post("/api/jobs", files={"file": ("c.wav", _wav_bytes(), "audio/wav")}).json()["id"]
     assert client.delete(f"/api/jobs/{jid}").json()["deleted"] is True
     assert client.get(f"/api/jobs/{jid}").status_code == 404
+
+
+def test_upload_accepts_quality_fields(settings, monkeypatch):
+    monkeypatch.setattr("app.api.routes_jobs.probe", lambda p: (0.1, "wav"))
+    client = _client(settings)
+    r = client.post(
+        "/api/jobs",
+        files={"file": ("clip.wav", _wav_bytes(), "audio/wav")},
+        data={"model": "htdemucs_ft", "shifts": "2", "overlap": "0.5"},
+    )
+    assert r.status_code == 200, r.text
+    job = r.json()
+    assert job["model"] == "htdemucs_ft"
+    assert job["shifts"] == 2 and job["overlap"] == 0.5
+
+
+def test_upload_defaults_quality_fields(settings, monkeypatch):
+    monkeypatch.setattr("app.api.routes_jobs.probe", lambda p: (0.1, "wav"))
+    client = _client(settings)
+    r = client.post("/api/jobs", files={"file": ("clip.wav", _wav_bytes(), "audio/wav")})
+    assert r.status_code == 200, r.text
+    job = r.json()
+    assert job["shifts"] == 1 and job["overlap"] == 0.25
