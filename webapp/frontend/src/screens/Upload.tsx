@@ -4,8 +4,9 @@ import type { Job, ModelInfo, OutputFormat } from "../types";
 
 type PresetName = "fast" | "high" | "max";
 
-// Multipliers measured on a CPU-only dev machine via a 15s clip of test.mp3
-// (see .superpowers/sdd/2026-07-31-quality-presets/task-7-report.md).
+// Multipliers measured on this machine (CPU-only, 15s clip of test.mp3):
+// Fast 10.6s, High 36.2s (~3x), Max 92.4s (~9x); Max extrapolates to ~25 min
+// for a 4-minute song, within the ~30 min budget.
 export const PRESETS: Record<
   PresetName,
   { model: string; shifts: number; overlap: number; label: string }
