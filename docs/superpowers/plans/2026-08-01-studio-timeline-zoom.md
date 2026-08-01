@@ -424,6 +424,10 @@ git commit -m "feat(studio): add two-tier waveform peak computation"
   - `interface View { start: number; end: number }`
   - `MIN_VIEW_SPAN = 0.25`, `ZOOM_STEP = 2`, `PAN_STEP = 0.15`, `SELECTION_PAD = 0.05`
   - `clampView(start: number, end: number, duration: number): View`
+  - `zoomAnchor(view: View, currentTime: number): number` — the playhead when
+    it falls inside `view`, otherwise the view centre. Shared by Task 7 (the
+    `[+]`/`[−]` buttons) and Task 8 (keyboard shortcuts) so the "anchor on the
+    playhead, else the centre" rule is written once, not duplicated per caller.
   - `useTimelineView(duration: number)` returning `{ view: View; setView(start, end): void; zoomBy(factor, anchorTime): void; fit(): void; panBy(fraction): void; zoomToSelection(start, end): void }`
 
 - [ ] **Step 1: Write the failing test**
@@ -433,7 +437,7 @@ Create `src/studio/__tests__/useTimelineView.test.ts`:
 ```ts
 import { renderHook, act } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
-import { useTimelineView, clampView, MIN_VIEW_SPAN } from "../useTimelineView";
+import { useTimelineView, clampView, zoomAnchor, MIN_VIEW_SPAN } from "../useTimelineView";
 
 describe("clampView", () => {
   it("returns a zero view when the duration is unknown", () => {
@@ -488,6 +492,14 @@ describe("useTimelineView", () => {
     act(() => result.current.setView(50, 50.3));
     act(() => result.current.zoomBy(100, 50.1));
     expect(result.current.view.end - result.current.view.start).toBeCloseTo(MIN_VIEW_SPAN, 6);
+  });
+
+  it("anchors on the playhead when it is inside the view", () => {
+    expect(zoomAnchor({ start: 40, end: 50 }, 45)).toBe(45);
+  });
+
+  it("anchors on the view centre when the playhead is outside it", () => {
+    expect(zoomAnchor({ start: 40, end: 50 }, 5)).toBe(45);
   });
 
   it("frames the selection with 5% padding", () => {
@@ -552,6 +564,13 @@ export function clampView(start: number, end: number, duration: number): View {
   const span = Math.min(Math.max(end - start, minSpan), duration);
   const s = Math.min(Math.max(start, 0), duration - span);
   return { start: s, end: s + span };
+}
+
+/** Zoom anchor: the playhead when visible, otherwise the view centre. */
+export function zoomAnchor(view: View, currentTime: number): number {
+  return currentTime >= view.start && currentTime <= view.end
+    ? currentTime
+    : (view.start + view.end) / 2;
 }
 
 export function useTimelineView(duration: number) {
@@ -1217,20 +1236,10 @@ Expected: FAIL — no `zoom in` button exists.
 In `src/studio/RegionTimeline.tsx`, add to the imports:
 
 ```tsx
-import { ZOOM_STEP } from "./useTimelineView";
+import { ZOOM_STEP, zoomAnchor } from "./useTimelineView";
 ```
 
-Extend `RegionTimelineProps` with `onZoom`, `onFit`, `onZoomToSelection` (signatures in the Interfaces block above), and add the anchor helper next to `nudgeStep`:
-
-```tsx
-  /** Zoom about the playhead when it is visible, otherwise the view centre. */
-  const zoomAnchor = (): number => {
-    const { start, end } = p.view;
-    return p.currentTime >= start && p.currentTime <= end
-      ? p.currentTime
-      : (start + end) / 2;
-  };
-```
+Extend `RegionTimelineProps` with `onZoom`, `onFit`, `onZoomToSelection` (signatures in the Interfaces block above). No local anchor helper is needed — `zoomAnchor(p.view, p.currentTime)` is called directly at each button's `onClick` below; it is the same function Task 8 uses for the keyboard shortcuts, so the "playhead, else view centre" rule is defined exactly once.
 
 Restructure the returned markup so the gutter holds two stacked cells and the ruler column holds the overview slot (filled in Task 10) above the track. Replace the `<div className="region-info">` block with:
 
@@ -1246,10 +1255,10 @@ Restructure the returned markup so the gutter holds two stacked cells and the ru
       <div className="zoom-controls">
         <button aria-label="zoom out" title="Zoom out"
           disabled={p.duration <= 0}
-          onClick={() => p.onZoom(1 / ZOOM_STEP, zoomAnchor())}>−</button>
+          onClick={() => p.onZoom(1 / ZOOM_STEP, zoomAnchor(p.view, p.currentTime))}>−</button>
         <button aria-label="zoom in" title="Zoom in"
           disabled={p.duration <= 0}
-          onClick={() => p.onZoom(ZOOM_STEP, zoomAnchor())}>+</button>
+          onClick={() => p.onZoom(ZOOM_STEP, zoomAnchor(p.view, p.currentTime))}>+</button>
         <button aria-label="fit to track" title="Fit whole track"
           disabled={p.duration <= 0} onClick={p.onFit}>Fit</button>
         <button aria-label="zoom to selection" title="Zoom to selection"
@@ -1479,10 +1488,7 @@ In `src/screens/Studio.tsx`, add `useEffect`/`useRef` to the React import and ad
   // Kept in a ref: currentTime changes every animation frame, and depending on
   // it directly would re-subscribe the listener 60x a second.
   const zoomAnchorRef = useRef(0);
-  zoomAnchorRef.current =
-    s.transport.currentTime >= v.view.start && s.transport.currentTime <= v.view.end
-      ? s.transport.currentTime
-      : (v.view.start + v.view.end) / 2;
+  zoomAnchorRef.current = zoomAnchor(v.view, s.transport.currentTime);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -1505,7 +1511,7 @@ In `src/screens/Studio.tsx`, add `useEffect`/`useRef` to the React import and ad
   }, [v.zoomBy, v.fit]);
 ```
 
-Add `ZOOM_STEP` to the `useTimelineView` import in this file.
+Add `ZOOM_STEP` and `zoomAnchor` to the `useTimelineView` import in this file (the same function Task 7 calls from the zoom buttons).
 
 - [ ] **Step 6: Run tests to verify they pass**
 
