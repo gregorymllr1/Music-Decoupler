@@ -2,9 +2,22 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createJob, listModels } from "../api/client";
 import type { Job, ModelInfo, OutputFormat } from "../types";
 
+type PresetName = "fast" | "high" | "max";
+
+// Estimated multipliers pending calibration on this machine (see plan Task 7).
+export const PRESETS: Record<
+  PresetName,
+  { model: string; shifts: number; overlap: number; label: string }
+> = {
+  fast: { model: "htdemucs", shifts: 1, overlap: 0.25, label: "Fast (~1x)" },
+  high: { model: "htdemucs_ft", shifts: 1, overlap: 0.25, label: "High quality (~4x)" },
+  max: { model: "htdemucs_ft", shifts: 2, overlap: 0.5, label: "Max quality (~12x)" },
+};
+
 export function Upload({ onCreated }: { onCreated: (j: Job) => void }) {
   const [models, setModels] = useState<ModelInfo[]>([]);
-  const [model, setModel] = useState("htdemucs");
+  const [preset, setPreset] = useState<PresetName>("high");
+  const [model, setModel] = useState(PRESETS.high.model);
   const [format, setFormat] = useState<OutputFormat>("wav");
   const [bitrate, setBitrate] = useState(320);
   const [bitdepth, setBitdepth] = useState(16);
@@ -40,6 +53,8 @@ export function Upload({ onCreated }: { onCreated: (j: Job) => void }) {
             output_format: format,
             output_bitrate: format === "mp3" ? bitrate : undefined,
             output_bitdepth: format === "wav" ? bitdepth : undefined,
+            shifts: PRESETS[preset].shifts,
+            overlap: PRESETS[preset].overlap,
             stems: allChosen ? undefined : chosen,
             batch_id,
           }),
@@ -78,7 +93,20 @@ export function Upload({ onCreated }: { onCreated: (j: Job) => void }) {
               : `${files.length} tracks selected`}
         </span>
       </div>
-      <select value={model} onChange={(e) => setModel(e.target.value)}>
+      <select
+        aria-label="quality"
+        value={preset}
+        onChange={(e) => {
+          const p = e.target.value as PresetName;
+          setPreset(p);
+          setModel(PRESETS[p].model);
+        }}
+      >
+        {(Object.keys(PRESETS) as PresetName[]).map((p) => (
+          <option key={p} value={p}>{PRESETS[p].label}</option>
+        ))}
+      </select>
+      <select aria-label="model" value={model} onChange={(e) => setModel(e.target.value)}>
         {models.map((m) => (
           <option key={m.name} value={m.name}>{m.name}</option>
         ))}

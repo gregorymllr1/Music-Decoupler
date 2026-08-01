@@ -24,6 +24,8 @@ export async function createJob(file: File, opts: CreateJobOpts): Promise<Job> {
   fd.append("output_format", opts.output_format);
   if (opts.output_bitrate != null) fd.append("output_bitrate", String(opts.output_bitrate));
   if (opts.output_bitdepth != null) fd.append("output_bitdepth", String(opts.output_bitdepth));
+  if (opts.shifts != null) fd.append("shifts", String(opts.shifts));
+  if (opts.overlap != null) fd.append("overlap", String(opts.overlap));
   if (opts.stems?.length) fd.append("stems", opts.stems.join(","));
   if (opts.batch_id) fd.append("batch_id", opts.batch_id);
   return json(await fetch(`${BASE}/jobs`, { method: "POST", body: fd }));

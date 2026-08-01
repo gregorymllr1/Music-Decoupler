@@ -9,6 +9,8 @@ export interface Job {
   source_duration?: number | null;
   model: string;
   output_format: OutputFormat;
+  shifts?: number | null;
+  overlap?: number | null;
   progress: number;
   progress_stage?: string | null;
   device_used?: string | null;
@@ -27,6 +29,8 @@ export interface CreateJobOpts {
   output_format: OutputFormat;
   output_bitrate?: number;
   output_bitdepth?: number;
+  shifts?: number;
+  overlap?: number;
   stems?: string[];
   batch_id?: string;
 }
