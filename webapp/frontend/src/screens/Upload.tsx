@@ -4,14 +4,15 @@ import type { Job, ModelInfo, OutputFormat } from "../types";
 
 type PresetName = "fast" | "high" | "max";
 
-// Estimated multipliers pending calibration on this machine (see plan Task 7).
+// Multipliers measured on a CPU-only dev machine via a 15s clip of test.mp3
+// (see .superpowers/sdd/2026-07-31-quality-presets/task-7-report.md).
 export const PRESETS: Record<
   PresetName,
   { model: string; shifts: number; overlap: number; label: string }
 > = {
   fast: { model: "htdemucs", shifts: 1, overlap: 0.25, label: "Fast (~1x)" },
-  high: { model: "htdemucs_ft", shifts: 1, overlap: 0.25, label: "High quality (~4x)" },
-  max: { model: "htdemucs_ft", shifts: 2, overlap: 0.5, label: "Max quality (~12x)" },
+  high: { model: "htdemucs_ft", shifts: 1, overlap: 0.25, label: "High quality (~3x)" },
+  max: { model: "htdemucs_ft", shifts: 2, overlap: 0.5, label: "Max quality (~9x)" },
 };
 
 export function Upload({ onCreated }: { onCreated: (j: Job) => void }) {
