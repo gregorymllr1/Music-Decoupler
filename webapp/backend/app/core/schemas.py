@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Literal, Optional
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 JobStatus = Literal["queued", "running", "done", "failed", "canceled"]
 OutputFormat = Literal["wav", "flac", "mp3"]
@@ -13,6 +13,8 @@ class JobCreate(BaseModel):
     output_format: OutputFormat = "wav"
     output_bitrate: Optional[int] = 320
     output_bitdepth: Optional[int] = 16
+    shifts: int = Field(default=1, ge=1, le=10)
+    overlap: float = Field(default=0.25, ge=0.1, le=0.9)
     requested_stems: Optional[List[str]] = None
     batch_id: Optional[str] = None
 
@@ -33,6 +35,8 @@ class JobOut(BaseModel):
     output_format: OutputFormat
     output_bitrate: Optional[int] = None
     output_bitdepth: Optional[int] = None
+    shifts: Optional[int] = None
+    overlap: Optional[float] = None
     requested_stems: Optional[List[str]] = None
     device_used: Optional[str] = None
     progress: float
