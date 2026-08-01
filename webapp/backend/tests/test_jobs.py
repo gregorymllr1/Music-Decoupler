@@ -70,3 +70,14 @@ def test_meta_roundtrip(conn):
     jobs.set_meta(conn, "device", "cuda")
     jobs.set_meta(conn, "device", "cpu")
     assert jobs.get_meta(conn, "device") == "cpu"
+
+
+def test_job_persists_quality_settings(conn):
+    job = jobs.create_job(
+        conn, source_filename="a.mp3", source_path="p", source_format="mp3",
+        source_duration=1.0, source_bytes=10,
+        spec=JobCreate(shifts=2, overlap=0.5),
+    )
+    assert job.shifts == 2 and job.overlap == 0.5
+    fetched = jobs.get_job(conn, job.id)
+    assert fetched.shifts == 2 and fetched.overlap == 0.5

@@ -23,6 +23,8 @@ CREATE TABLE IF NOT EXISTS jobs (
   output_bitrate  INTEGER,
   output_bitdepth INTEGER,
   requested_stems TEXT,
+  shifts          INTEGER,
+  overlap         REAL,
   device_used     TEXT,
   progress        REAL NOT NULL DEFAULT 0,
   progress_stage  TEXT,
@@ -63,10 +65,21 @@ def get_connection() -> sqlite3.Connection:
     return conn
 
 
+_JOBS_COLUMN_MIGRATIONS = {"shifts": "INTEGER", "overlap": "REAL"}
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    cols = {r["name"] for r in conn.execute("PRAGMA table_info(jobs)").fetchall()}
+    for name, decl in _JOBS_COLUMN_MIGRATIONS.items():
+        if name not in cols:
+            conn.execute(f"ALTER TABLE jobs ADD COLUMN {name} {decl}")
+
+
 def init_db(conn: sqlite3.Connection | None = None) -> None:
     own = conn is None
     conn = conn or get_connection()
     conn.executescript(SCHEMA)
+    _migrate(conn)
     conn.commit()
     if own:
         conn.close()

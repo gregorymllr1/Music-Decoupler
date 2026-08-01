@@ -29,11 +29,13 @@ def create_job(conn, *, source_filename, source_path, source_format,
     conn.execute(
         """INSERT INTO jobs (id,batch_id,created_at,updated_at,status,attempts,
             source_filename,source_path,source_format,source_duration,source_bytes,
-            model,output_format,output_bitrate,output_bitdepth,requested_stems,progress)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            model,output_format,output_bitrate,output_bitdepth,shifts,overlap,
+            requested_stems,progress)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
         (jid, spec.batch_id, now, now, "queued", 0,
          source_filename, str(source_path), source_format, source_duration, source_bytes,
          spec.model, spec.output_format, spec.output_bitrate, spec.output_bitdepth,
+         spec.shifts, spec.overlap,
          json.dumps(spec.requested_stems) if spec.requested_stems else None, 0.0),
     )
     conn.commit()
