@@ -39,15 +39,16 @@ class ModelCache:
 
 def run_separation(*, source_path: str, model: str, device: str,
                    on_progress: Callable[[float, str], None],
-                   cache: ModelCache) -> Tuple[Dict[str, object], int]:
+                   cache: ModelCache, shifts: int = 1,
+                   overlap: float = 0.25) -> Tuple[Dict[str, object], int]:
     separator = cache.get(model, device)
 
     def _cb(d: dict) -> None:
         if d.get("state") == "end":
-            frac, stage = compute_progress(d)
+            frac, stage = compute_progress(d, total_shifts=shifts)
             on_progress(frac, stage)
 
-    separator.update_parameter(callback=_cb)
+    separator.update_parameter(callback=_cb, shifts=shifts, overlap=overlap)
     _origin, separated = separator.separate_audio_file(source_path)
     return separated, separator.samplerate
 
@@ -67,7 +68,7 @@ def _empty_cuda_cache() -> None:
 
 
 def run_separation_resilient(*, source_path, model, device, on_progress, cache,
-                             segments=(None, 12, 8)):
+                             segments=(None, 12, 8), shifts=1, overlap=0.25):
     devices = [device, "cpu"] if device == "cuda" else ["cpu"]
     last_err = None
     for dev in devices:
@@ -77,13 +78,14 @@ def run_separation_resilient(*, source_path, model, device, on_progress, cache,
 
             def _cb(d: dict) -> None:
                 if d.get("state") == "end":
-                    frac, stage = compute_progress(d)
+                    frac, stage = compute_progress(d, total_shifts=shifts)
                     on_progress(frac, stage)
 
-            kwargs = {"callback": _cb}
-            if seg is not None:
-                kwargs["segment"] = seg
-            separator.update_parameter(**kwargs)
+            # Set every parameter on every attempt: cached Separator instances
+            # keep their previous values otherwise (segment=None restores the
+            # model's default segment length).
+            separator.update_parameter(callback=_cb, shifts=shifts,
+                                       overlap=overlap, segment=seg)
             try:
                 _origin, separated = separator.separate_audio_file(source_path)
                 return separated, separator.samplerate, dev

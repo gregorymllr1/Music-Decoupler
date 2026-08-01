@@ -28,6 +28,7 @@ def _real_separate(cache):
             source_path=job.source_path, model=job.model,
             device=job.device_used or engine.detect_device(),
             on_progress=on_progress, cache=cache,
+            shifts=job.shifts or 1, overlap=job.overlap or 0.25,
         )
         return stems, sr
 
