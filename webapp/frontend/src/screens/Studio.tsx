@@ -8,7 +8,7 @@ import { ABToggle } from "../studio/ABToggle";
 import { ExportPanel } from "../studio/ExportPanel";
 import { RegionTimeline } from "../studio/RegionTimeline";
 import { fmtTime } from "../studio/time";
-import { stemUrl, createMixdown, mixdownDownloadUrl } from "../api/client";
+import { createMixdown, mixdownDownloadUrl } from "../api/client";
 
 export function Studio({ job, onBack }: { job: Job; onBack: () => void }) {
   const s = useStudioEngine(job);
@@ -49,7 +49,7 @@ export function Studio({ job, onBack }: { job: Job; onBack: () => void }) {
               onMute={(b) => s.setMute(c.stem, b)}
               onSolo={(b) => s.setSolo(c.stem, b)}
             />
-            <Waveform url={stemUrl(job.id, c.stem)} />
+            <Waveform data={s.waveforms[c.stem] ?? null} view={{ start: 0, end: dur }} />
           </div>
         ))}
         <div className="tracks-overlay" aria-hidden="true">

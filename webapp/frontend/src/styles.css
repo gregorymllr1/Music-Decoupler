@@ -962,7 +962,8 @@ select:focus {
   overflow: hidden;
 }
 
-.waveform > div {
+.waveform > canvas {
+  display: block;
   width: 100%;
 }
 
