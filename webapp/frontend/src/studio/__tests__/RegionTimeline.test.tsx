@@ -25,14 +25,15 @@ function setup(region = { start: 10, end: 60 }, view = { start: 0, end: 100 }) {
   const onZoom = vi.fn();
   const onFit = vi.fn();
   const onZoomToSelection = vi.fn();
+  const onPan = vi.fn();
   render(
     <RegionTimeline duration={100} currentTime={5} region={region} view={view}
       onRegionChange={onRegionChange} onSeek={onSeek}
-      onZoom={onZoom} onFit={onFit} onZoomToSelection={onZoomToSelection} />,
+      onZoom={onZoom} onFit={onFit} onZoomToSelection={onZoomToSelection} onPan={onPan} />,
   );
   const track = screen.getByTestId("region-track");
   vi.spyOn(track, "getBoundingClientRect").mockReturnValue(rect);
-  return { onRegionChange, onSeek, onZoom, onFit, onZoomToSelection, track };
+  return { onRegionChange, onSeek, onZoom, onFit, onZoomToSelection, onPan, track };
 }
 
 describe("RegionTimeline", () => {
@@ -136,5 +137,37 @@ describe("RegionTimeline", () => {
     expect(onFit).toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: /zoom to selection/i }));
     expect(onZoomToSelection).toHaveBeenCalled();
+  });
+
+  it("ctrl+wheel zooms about the time under the cursor", () => {
+    const { onZoom } = setup({ start: 42, end: 48 }, { start: 40, end: 50 });
+    fireEvent.wheel(screen.getByTestId("region-track"), {
+      deltaY: -100, ctrlKey: true, clientX: 30,
+    });
+    expect(onZoom).toHaveBeenCalledWith(2, 43); // 30% of 40s-50s
+  });
+
+  it("ctrl+wheel down zooms out", () => {
+    const { onZoom } = setup({ start: 42, end: 48 }, { start: 40, end: 50 });
+    fireEvent.wheel(screen.getByTestId("region-track"), {
+      deltaY: 100, ctrlKey: true, clientX: 30,
+    });
+    expect(onZoom).toHaveBeenCalledWith(0.5, 43);
+  });
+
+  it("shift+wheel pans", () => {
+    const { onPan } = setup();
+    const track = screen.getByTestId("region-track");
+    fireEvent.wheel(track, { deltaY: 100, shiftKey: true, clientX: 30 });
+    expect(onPan).toHaveBeenCalledWith(0.15);
+    fireEvent.wheel(track, { deltaY: -100, shiftKey: true, clientX: 30 });
+    expect(onPan).toHaveBeenCalledWith(-0.15);
+  });
+
+  it("ignores a plain wheel so the page still scrolls", () => {
+    const { onZoom, onPan } = setup();
+    fireEvent.wheel(screen.getByTestId("region-track"), { deltaY: 100, clientX: 30 });
+    expect(onZoom).not.toHaveBeenCalled();
+    expect(onPan).not.toHaveBeenCalled();
   });
 });

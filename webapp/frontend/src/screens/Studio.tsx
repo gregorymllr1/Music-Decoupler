@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import type { Job } from "../types";
 import { useStudioEngine, REGION_EDGE_EPS } from "../studio/useStudioEngine";
-import { useTimelineView } from "../studio/useTimelineView";
+import { useTimelineView, ZOOM_STEP, zoomAnchor } from "../studio/useTimelineView";
 import { ChannelStrip } from "../studio/ChannelStrip";
 import { Transport } from "../studio/Transport";
 import { Waveform } from "../studio/Waveform";
@@ -22,6 +22,31 @@ export function Studio({ job, onBack }: { job: Job; onBack: () => void }) {
   const rangeSummary = narrowed
     ? `Selection ${fmtTime(s.region.start)} – ${fmtTime(s.region.end)} (${fmtTime(s.region.end - s.region.start)})`
     : "Full track";
+
+  // Kept in a ref: currentTime changes every animation frame, and depending on
+  // it directly would re-subscribe the listener 60x a second.
+  const zoomAnchorRef = useRef(0);
+  zoomAnchorRef.current = zoomAnchor(v.view, s.transport.currentTime);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      const tag = el?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || el?.isContentEditable) return;
+      if (e.key === "+" || e.key === "=") {
+        e.preventDefault();
+        v.zoomBy(ZOOM_STEP, zoomAnchorRef.current);
+      } else if (e.key === "-") {
+        e.preventDefault();
+        v.zoomBy(1 / ZOOM_STEP, zoomAnchorRef.current);
+      } else if (e.key === "0") {
+        e.preventDefault();
+        v.fit();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [v.zoomBy, v.fit]);
 
   async function handleExport(format: "wav" | "flac" | "mp3", name: string) {
     const req = s.buildMixdownRequest(format, name);
@@ -47,6 +72,7 @@ export function Studio({ job, onBack }: { job: Job; onBack: () => void }) {
         onZoom={v.zoomBy}
         onFit={v.fit}
         onZoomToSelection={() => v.zoomToSelection(s.region.start, s.region.end)}
+        onPan={v.panBy}
       />
       <div className="tracks">
         {s.channels.map((c) => (

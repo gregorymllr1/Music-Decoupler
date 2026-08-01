@@ -1,6 +1,6 @@
-import React, { useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { fmtTime, decimalsForSpan } from "./time";
-import { ZOOM_STEP, zoomAnchor, type View } from "./useTimelineView";
+import { ZOOM_STEP, PAN_STEP, zoomAnchor, type View } from "./useTimelineView";
 
 export interface RegionTimelineProps {
   duration: number;
@@ -12,6 +12,7 @@ export interface RegionTimelineProps {
   onZoom: (factor: number, anchorTime: number) => void;
   onFit: () => void;
   onZoomToSelection: () => void;
+  onPan: (fraction: number) => void;
 }
 
 export function RegionTimeline(p: RegionTimelineProps) {
@@ -66,6 +67,24 @@ export function RegionTimeline(p: RegionTimelineProps) {
       e.preventDefault();
       moveHandle(which, (which === "start" ? p.region.start : p.region.end) + delta);
     },
+  });
+
+  // React attaches wheel listeners on its root as passive, so preventDefault()
+  // in an onWheel prop is a no-op. Attach natively instead.
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        p.onZoom(e.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP, timeFromClientX(e.clientX));
+      } else if (e.shiftKey) {
+        e.preventDefault();
+        p.onPan(e.deltaY > 0 ? PAN_STEP : -PAN_STEP);
+      }
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
   });
 
   return (
