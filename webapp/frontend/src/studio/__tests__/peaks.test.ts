@@ -80,9 +80,11 @@ describe("computeColumns", () => {
   it("pyramid tier envelopes the raw tier over the same window", () => {
     // Zoomed out: pyramid tier. Bucket-aligned scanning may widen the
     // envelope, so it must contain the exact raw envelope, not equal it.
-    const wide = computeColumns(s, p, 0, 10, 50);
-    const exact = computeColumns(s, { ...p, bucketSize: 1e9 }, 0, 10, 50);
-    for (let i = 0; i < 50; i++) {
+    // width=30 gives samplesPerPixel ≈ 333 >= 256 (uses pyramid), while
+    // bucketSize=1e9 forces raw branch for comparison.
+    const wide = computeColumns(s, p, 0, 10, 30);
+    const exact = computeColumns(s, { ...p, bucketSize: 1e9 }, 0, 10, 30);
+    for (let i = 0; i < 30; i++) {
       expect(wide.min[i]).toBeLessThanOrEqual(exact.min[i] + 1e-6);
       expect(wide.max[i]).toBeGreaterThanOrEqual(exact.max[i] - 1e-6);
     }
