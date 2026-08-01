@@ -25,6 +25,8 @@ export function RegionTimeline(p: RegionTimelineProps) {
   const pct = (t: number) =>
     span > 0 ? Math.min(100, Math.max(0, ((t - p.view.start) / span) * 100)) : 0;
 
+  const isOffscreen = (t: number) => t < p.view.start || t > p.view.end;
+
   const timeFromClientX = (clientX: number): number => {
     const el = trackRef.current;
     if (!el || span <= 0) return 0;
@@ -49,6 +51,8 @@ export function RegionTimeline(p: RegionTimelineProps) {
   const handleProps = (which: "start" | "end") => ({
     onPointerDown: (e: React.PointerEvent<HTMLDivElement>) => {
       e.stopPropagation();
+      const t = which === "start" ? p.region.start : p.region.end;
+      if (isOffscreen(t)) return; // dragging a pinned handle would teleport it
       dragging.current = which;
       (e.target as Element).setPointerCapture?.(e.pointerId);
     },
@@ -127,7 +131,8 @@ export function RegionTimeline(p: RegionTimelineProps) {
           aria-valuemin={0}
           aria-valuemax={p.duration}
           aria-valuenow={p.region.start}
-          className="region-handle start"
+          className={`region-handle start${isOffscreen(p.region.start) ? " is-offscreen" : ""}`}
+          data-offscreen={isOffscreen(p.region.start) ? "true" : "false"}
           style={{ left: `${pct(p.region.start)}%` }}
           {...handleProps("start")}
         />
@@ -138,7 +143,8 @@ export function RegionTimeline(p: RegionTimelineProps) {
           aria-valuemin={0}
           aria-valuemax={p.duration}
           aria-valuenow={p.region.end}
-          className="region-handle end"
+          className={`region-handle end${isOffscreen(p.region.end) ? " is-offscreen" : ""}`}
+          data-offscreen={isOffscreen(p.region.end) ? "true" : "false"}
           style={{ left: `${pct(p.region.end)}%` }}
           {...handleProps("end")}
         />

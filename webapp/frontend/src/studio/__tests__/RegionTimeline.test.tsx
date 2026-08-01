@@ -170,4 +170,31 @@ describe("RegionTimeline", () => {
     expect(onZoom).not.toHaveBeenCalled();
     expect(onPan).not.toHaveBeenCalled();
   });
+
+  it("pins an off-screen handle to the view edge and refuses to drag it", () => {
+    // View 45s-50s; the start handle at 42s is off the left edge.
+    const { onRegionChange } = setup({ start: 42, end: 48 }, { start: 45, end: 50 });
+    const start = screen.getByRole("slider", { name: /region start/i });
+    expect(start.getAttribute("data-offscreen")).toBe("true");
+    expect(start.className).toContain("is-offscreen");
+    expect(start.style.left).toBe("0%");
+    fireEvent.pointerDown(start, { clientX: 0, pointerId: 1 });
+    fireEvent.pointerMove(start, { clientX: 50, pointerId: 1 });
+    expect(onRegionChange).not.toHaveBeenCalled();
+  });
+
+  it("still reports the true time of an off-screen handle", () => {
+    setup({ start: 42, end: 48 }, { start: 45, end: 50 });
+    const start = screen.getByRole("slider", { name: /region start/i });
+    expect(start.getAttribute("aria-valuenow")).toBe("42");
+  });
+
+  it("leaves on-screen handles draggable", () => {
+    const { onRegionChange } = setup({ start: 46, end: 48 }, { start: 45, end: 50 });
+    const start = screen.getByRole("slider", { name: /region start/i });
+    expect(start.getAttribute("data-offscreen")).toBe("false");
+    fireEvent.pointerDown(start, { clientX: 20, pointerId: 1 });
+    fireEvent.pointerMove(start, { clientX: 50, pointerId: 1 });
+    expect(onRegionChange).toHaveBeenLastCalledWith(47.5, 48);
+  });
 });

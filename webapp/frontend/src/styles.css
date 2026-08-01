@@ -873,6 +873,16 @@ select:focus {
   outline-offset: 1px;
 }
 
+.region-handle.is-offscreen {
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.region-handle.is-offscreen::after {
+  width: 2px;
+  background: var(--text-dim);
+}
+
 .region-playhead {
   position: absolute;
   top: 0;
