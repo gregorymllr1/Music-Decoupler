@@ -4,3 +4,5 @@ frontend/dist/
 backend/.venv/
 __pycache__/
 *.pyc
+frontend/src/**/*.js
+frontend/src/**/*.js.map
