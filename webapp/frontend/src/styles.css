@@ -739,10 +739,17 @@ select:focus {
 .region-timeline {
   display: grid;
   grid-template-columns: var(--track-gutter) 1fr;
+  grid-template-rows: auto auto;
   align-items: center;
-  background: var(--surface);
   border-bottom: 1px solid var(--border-subtle);
 }
+
+/* Explicit placement, so DOM order does not decide the layout and Task 10 can
+   drop the overview into row 1 / column 2 without reordering anything. */
+.region-info       { grid-column: 1; grid-row: 1; }
+.zoom-controls     { grid-column: 1; grid-row: 2; }
+.timeline-overview { grid-column: 2; grid-row: 1; }
+.region-track      { grid-column: 2; grid-row: 2; }
 
 .region-info {
   display: flex;
@@ -773,6 +780,41 @@ select:focus {
 .region-info button:hover {
   color: var(--text);
   border-color: var(--accent-dim);
+}
+
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: 0 var(--sp-3) var(--sp-2);
+  border-right: 1px solid var(--border-subtle);
+}
+
+.zoom-controls button {
+  min-height: 20px;
+  padding: 2px 6px;
+  font-size: 0.625rem;
+  font-family: var(--font-mono);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+}
+
+.zoom-controls button:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--accent-dim);
+}
+
+.zoom-controls button:disabled {
+  opacity: 0.4;
+}
+
+.view-span {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  color: var(--text-dim);
+  white-space: nowrap;
 }
 
 .region-track {

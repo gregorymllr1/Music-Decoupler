@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 import { fmtTime, decimalsForSpan } from "./time";
-import type { View } from "./useTimelineView";
+import { ZOOM_STEP, zoomAnchor, type View } from "./useTimelineView";
 
 export interface RegionTimelineProps {
   duration: number;
@@ -9,6 +9,9 @@ export interface RegionTimelineProps {
   view: View;
   onRegionChange: (start: number, end: number) => void;
   onSeek: (t: number) => void;
+  onZoom: (factor: number, anchorTime: number) => void;
+  onFit: () => void;
+  onZoomToSelection: () => void;
 }
 
 export function RegionTimeline(p: RegionTimelineProps) {
@@ -74,6 +77,19 @@ export function RegionTimeline(p: RegionTimelineProps) {
         <button aria-label="reset region" onClick={() => p.onRegionChange(0, p.duration)}>
           Reset
         </button>
+      </div>
+      <div className="zoom-controls">
+        <button aria-label="zoom out" title="Zoom out"
+          disabled={p.duration <= 0}
+          onClick={() => p.onZoom(1 / ZOOM_STEP, zoomAnchor(p.view, p.currentTime))}>−</button>
+        <button aria-label="zoom in" title="Zoom in"
+          disabled={p.duration <= 0}
+          onClick={() => p.onZoom(ZOOM_STEP, zoomAnchor(p.view, p.currentTime))}>+</button>
+        <button aria-label="fit to track" title="Fit whole track"
+          disabled={p.duration <= 0} onClick={p.onFit}>Fit</button>
+        <button aria-label="zoom to selection" title="Zoom to selection"
+          disabled={p.duration <= 0} onClick={p.onZoomToSelection}>⤢ Sel</button>
+        <span className="view-span">{span > 0 ? `${span.toFixed(2)}s` : ""}</span>
       </div>
       <div
         className="region-track"

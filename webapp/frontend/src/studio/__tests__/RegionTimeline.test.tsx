@@ -22,13 +22,17 @@ const rect = {
 function setup(region = { start: 10, end: 60 }, view = { start: 0, end: 100 }) {
   const onRegionChange = vi.fn();
   const onSeek = vi.fn();
+  const onZoom = vi.fn();
+  const onFit = vi.fn();
+  const onZoomToSelection = vi.fn();
   render(
     <RegionTimeline duration={100} currentTime={5} region={region} view={view}
-      onRegionChange={onRegionChange} onSeek={onSeek} />,
+      onRegionChange={onRegionChange} onSeek={onSeek}
+      onZoom={onZoom} onFit={onFit} onZoomToSelection={onZoomToSelection} />,
   );
   const track = screen.getByTestId("region-track");
   vi.spyOn(track, "getBoundingClientRect").mockReturnValue(rect);
-  return { onRegionChange, onSeek, track };
+  return { onRegionChange, onSeek, onZoom, onFit, onZoomToSelection, track };
 }
 
 describe("RegionTimeline", () => {
@@ -106,5 +110,31 @@ describe("RegionTimeline", () => {
   it("shows sub-second times when zoomed in", () => {
     setup({ start: 42.1837, end: 42.9 }, { start: 42, end: 43 });
     expect(screen.getByText(/0:42\.184 – 0:42\.900/)).toBeTruthy();
+  });
+
+  it("zooms about the playhead when it is inside the view", () => {
+    const { onZoom } = setup({ start: 10, end: 60 }, { start: 0, end: 100 });
+    fireEvent.click(screen.getByRole("button", { name: /zoom in/i }));
+    expect(onZoom).toHaveBeenCalledWith(2, 5); // currentTime is 5
+  });
+
+  it("zooms about the view centre when the playhead is off-screen", () => {
+    const { onZoom } = setup({ start: 42, end: 48 }, { start: 40, end: 50 });
+    fireEvent.click(screen.getByRole("button", { name: /zoom in/i }));
+    expect(onZoom).toHaveBeenCalledWith(2, 45);
+  });
+
+  it("zooms out with the inverse factor", () => {
+    const { onZoom } = setup();
+    fireEvent.click(screen.getByRole("button", { name: /zoom out/i }));
+    expect(onZoom).toHaveBeenCalledWith(0.5, 5);
+  });
+
+  it("fits and frames the selection", () => {
+    const { onFit, onZoomToSelection } = setup();
+    fireEvent.click(screen.getByRole("button", { name: /fit to track/i }));
+    expect(onFit).toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: /zoom to selection/i }));
+    expect(onZoomToSelection).toHaveBeenCalled();
   });
 });
