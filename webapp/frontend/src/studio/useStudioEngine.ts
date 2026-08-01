@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { StudioEngine } from "./StudioEngine";
 import { stemUrl, sourceUrl } from "../api/client";
+import { buildPeakPyramid, type AudioSourceLike, type WaveformData } from "./peaks";
 import type { Job, MixdownRequest } from "../types";
 
 export interface Channel {
@@ -24,6 +25,33 @@ async function decodeFromUrl(ctx: AudioContext, url: string): Promise<AudioBuffe
   return ctx.decodeAudioData(buf);
 }
 
+/** Let the browser paint between stems so a 4-stem job never freezes the UI. */
+function yieldToPaint(): Promise<void> {
+  return new Promise((resolve) => {
+    const ric = (globalThis as { requestIdleCallback?: (cb: () => void) => void })
+      .requestIdleCallback;
+    if (typeof ric === "function") ric(() => resolve());
+    else setTimeout(resolve, 0);
+  });
+}
+
+async function buildWaveforms(
+  engine: StudioEngine,
+  stems: string[],
+  isCancelled: () => boolean,
+  emit: (stem: string, data: WaveformData) => void,
+): Promise<void> {
+  for (const stem of stems) {
+    if (isCancelled()) return;
+    const source = engine.getBuffer(stem) as AudioSourceLike | null;
+    if (!source) continue;
+    const pyramid = buildPeakPyramid(source);
+    if (isCancelled()) return;
+    emit(stem, { source, pyramid });
+    await yieldToPaint();
+  }
+}
+
 export function useStudioEngine(job: Job) {
   const engineRef = useRef<StudioEngine | null>(null);
   const [stems, setStems] = useState<string[]>([]);
@@ -32,18 +60,27 @@ export function useStudioEngine(job: Job) {
   const [abMode, setAbModeState] = useState<"original" | "mix">("mix");
   const [transport, setTransport] = useState({ playing: false, currentTime: 0, duration: 0 });
   const [region, setRegionState] = useState<Region>({ start: 0, end: 0 });
+  const [waveforms, setWaveforms] = useState<Record<string, WaveformData>>({});
 
   useEffect(() => {
+    setWaveforms({});
     const ctx = new AudioContext();
     const engine = new StudioEngine(ctx, (url) => decodeFromUrl(ctx, url));
     engineRef.current = engine;
     const tracks = Object.keys(job.stems ?? {}).map((stem) => ({ stem, url: stemUrl(job.id, stem) }));
+    let cancelled = false;
     let raf = 0;
     engine.load(tracks).then(() => {
       setStems(engine.stems);
       setChannels(engine.stems.map((stem) => ({ stem, volume: 1, muted: false, solo: false })));
       setTransport((t) => ({ ...t, duration: engine.duration }));
       setRegionState({ start: 0, end: engine.duration });
+      void buildWaveforms(
+        engine,
+        engine.stems,
+        () => cancelled,
+        (stem, data) => setWaveforms((w) => ({ ...w, [stem]: data })),
+      );
     });
     engine.loadOriginal(sourceUrl(job.id)).catch(() => {});
     const tick = () => {
@@ -53,6 +90,7 @@ export function useStudioEngine(job: Job) {
     };
     raf = requestAnimationFrame(tick);
     return () => {
+      cancelled = true;
       cancelAnimationFrame(raf);
       engine.stop();
       ctx.close?.();
@@ -65,6 +103,7 @@ export function useStudioEngine(job: Job) {
   return {
     stems,
     channels,
+    waveforms,
     master,
     abMode,
     transport,

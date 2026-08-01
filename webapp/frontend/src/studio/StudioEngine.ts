@@ -59,6 +59,10 @@ export class StudioEngine {
     return this.tracks.reduce((m, t) => Math.max(m, t.buffer.duration), 0);
   }
 
+  getBuffer(stem: string): AudioBuffer | null {
+    return this.tracks.find((t) => t.stem === stem)?.buffer ?? null;
+  }
+
   get isPlaying(): boolean {
     return this.playing;
   }

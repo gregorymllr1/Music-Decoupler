@@ -16,7 +16,14 @@ beforeEach(() => {
     currentTime = 0; destination = {};
     createGain = () => new FakeGain();
     createBufferSource = () => new FakeSrc();
-    decodeAudioData = async () => ({ duration: 10 });
+    // Small but realistic fake AudioBuffer: 10s at 8kHz, constant +0.5.
+    decodeAudioData = async () => ({
+      duration: 10,
+      numberOfChannels: 1,
+      length: 80_000,
+      sampleRate: 8000,
+      getChannelData: () => new Float32Array(80_000).fill(0.5),
+    });
   }
   vi.stubGlobal("AudioContext", FakeCtx as any);
   vi.stubGlobal("fetch", vi.fn(async () => ({ arrayBuffer: async () => new ArrayBuffer(8) })));
@@ -59,5 +66,16 @@ describe("useStudioEngine", () => {
     act(() => result.current.resetRegion());
     req = result.current.buildMixdownRequest("mp3", "clip");
     expect(req.start_sec).toBeUndefined();
+  });
+
+  it("builds a waveform pyramid per stem after loading", async () => {
+    const { result } = renderHook(() => useStudioEngine(job));
+    await waitFor(() => expect(Object.keys(result.current.waveforms).sort())
+      .toEqual(["drums", "vocals"]));
+    const w = result.current.waveforms.vocals;
+    expect(w.pyramid.length).toBe(80_000);
+    expect(w.pyramid.sampleRate).toBe(8000);
+    expect(w.pyramid.max[0]).toBeCloseTo(0.5, 5);
+    expect(w.source.length).toBe(80_000);
   });
 });

@@ -109,4 +109,10 @@ describe("StudioEngine", () => {
     expect(engine.currentTime).toBeCloseTo(2, 5);
     expect(ctx.sources[0].start).toHaveBeenCalledWith(0, 2, 6);
   });
+
+  it("exposes decoded buffers by stem and null for unknown stems", async () => {
+    await engine.load([{ stem: "vocals", url: "u" }]);
+    expect(engine.getBuffer("vocals")).not.toBeNull();
+    expect(engine.getBuffer("nope")).toBeNull();
+  });
 });
