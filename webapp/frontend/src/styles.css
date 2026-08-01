@@ -817,6 +817,48 @@ select:focus {
   white-space: nowrap;
 }
 
+.timeline-overview {
+  position: relative;
+  height: 18px;
+  margin: var(--sp-2) var(--sp-4) 0;
+  background: var(--surface-raise);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.overview-window {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(122, 162, 247, 0.22);
+  border: 1px solid var(--accent-dim);
+  border-radius: 2px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.overview-window:active {
+  cursor: grabbing;
+}
+
+.overview-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--accent);
+  pointer-events: none;
+}
+
+.overview-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--text-dim);
+  pointer-events: none;
+}
+
 .region-track {
   position: relative;
   height: 32px;

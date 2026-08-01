@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { fmtTime, decimalsForSpan } from "./time";
 import { ZOOM_STEP, PAN_STEP, zoomAnchor, type View } from "./useTimelineView";
+import { TimelineOverview } from "./TimelineOverview";
 
 export interface RegionTimelineProps {
   duration: number;
@@ -13,6 +14,7 @@ export interface RegionTimelineProps {
   onFit: () => void;
   onZoomToSelection: () => void;
   onPan: (fraction: number) => void;
+  onViewChange: (start: number, end: number) => void;
 }
 
 export function RegionTimeline(p: RegionTimelineProps) {
@@ -114,6 +116,13 @@ export function RegionTimeline(p: RegionTimelineProps) {
           disabled={p.duration <= 0} onClick={p.onZoomToSelection}>⤢ Sel</button>
         <span className="view-span">{span > 0 ? `${span.toFixed(2)}s` : ""}</span>
       </div>
+      <TimelineOverview
+        duration={p.duration}
+        view={p.view}
+        region={p.region}
+        currentTime={p.currentTime}
+        onViewChange={p.onViewChange}
+      />
       <div
         className="region-track"
         data-testid="region-track"

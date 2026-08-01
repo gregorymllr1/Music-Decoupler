@@ -73,6 +73,7 @@ export function Studio({ job, onBack }: { job: Job; onBack: () => void }) {
         onFit={v.fit}
         onZoomToSelection={() => v.zoomToSelection(s.region.start, s.region.end)}
         onPan={v.panBy}
+        onViewChange={v.setView}
       />
       <div className="tracks">
         {s.channels.map((c) => (

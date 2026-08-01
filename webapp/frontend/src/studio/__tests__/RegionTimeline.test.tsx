@@ -26,14 +26,16 @@ function setup(region = { start: 10, end: 60 }, view = { start: 0, end: 100 }) {
   const onFit = vi.fn();
   const onZoomToSelection = vi.fn();
   const onPan = vi.fn();
+  const onViewChange = vi.fn();
   render(
     <RegionTimeline duration={100} currentTime={5} region={region} view={view}
       onRegionChange={onRegionChange} onSeek={onSeek}
-      onZoom={onZoom} onFit={onFit} onZoomToSelection={onZoomToSelection} onPan={onPan} />,
+      onZoom={onZoom} onFit={onFit} onZoomToSelection={onZoomToSelection} onPan={onPan}
+      onViewChange={onViewChange} />,
   );
   const track = screen.getByTestId("region-track");
   vi.spyOn(track, "getBoundingClientRect").mockReturnValue(rect);
-  return { onRegionChange, onSeek, onZoom, onFit, onZoomToSelection, onPan, track };
+  return { onRegionChange, onSeek, onZoom, onFit, onZoomToSelection, onPan, onViewChange, track };
 }
 
 describe("RegionTimeline", () => {
